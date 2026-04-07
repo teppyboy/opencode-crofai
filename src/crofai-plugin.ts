@@ -1,6 +1,16 @@
 import type { Plugin } from '@opencode-ai/plugin';
 
-export const CrofAIPlugin: Plugin = async ({ project, client, $, directory, worktree }) => {
+// Global API declarations for Bun runtime
+const fetch = globalThis.fetch;
+const AbortController = globalThis.AbortController;
+const Headers = globalThis.Headers;
+const setTimeout = globalThis.setTimeout;
+const clearTimeout = globalThis.clearTimeout;
+
+// Re-assign global fetch to use the mocked version
+globalThis.fetch = fetch;
+
+export const CrofAIPlugin: Plugin = async ({ client, directory }: any) => {
   return {
     auth: {
       provider: 'crofai',
@@ -14,7 +24,7 @@ export const CrofAIPlugin: Plugin = async ({ project, client, $, directory, work
             const controller = new AbortController();
             const timeoutId = setTimeout(() => controller.abort(), 30000); // 30s timeout
 
-            const response = await fetch('https://crof.ai/v1/models', {
+            const response = await globalThis.fetch('https://crof.ai/v1/models', {
               headers: {
                 Authorization: `Bearer ${apiKey}`,
               },
@@ -90,7 +100,7 @@ export const CrofAIPlugin: Plugin = async ({ project, client, $, directory, work
           async fetch(input, init) {
             const headers = new Headers(init?.headers ?? {});
             headers.set('Authorization', `Bearer ${apiKey}`);
-            return fetch(input, { ...init, headers });
+            return globalThis.fetch(input, { ...init, headers });
           },
         };
       },
@@ -100,7 +110,7 @@ export const CrofAIPlugin: Plugin = async ({ project, client, $, directory, work
       crofaiToggleThinking: {
         description: 'Toggle CrofAI reasoning mode on/off',
         args: {},
-        async execute(_, ctx) {
+        async execute() {
           const cfgPath = `${directory}/opencode.json`;
           const cfg = await client.fs.readJson(cfgPath);
           const currentThinking = cfg?.crofai?.reasoning ?? 'none';
@@ -127,20 +137,20 @@ export const CrofAIPlugin: Plugin = async ({ project, client, $, directory, work
       },
     },
 
-    'experimental.chat.system.transform': async (input, output) => {
+    'experimental.chat.system.transform': async (input: any, output: any) => {
       const cfgPath = `${directory}/opencode.json`;
       const cfg = await client.fs.readJson(cfgPath);
 
       if (cfg?.crofai?.reasoning && cfg.crofai.reasoning !== 'none') {
         // Append a directive to use the model's reasoning capabilities
-        output.system = `${output.system}
+        output.system += `
 
 [NOTE] Use reasoning level "${cfg.crofai.reasoning}" for this request.`;
       }
     },
 
     // Listen for the built-in reasoning.toggle command (triggered by Ctrl+T)
-    'tui.command.execute': async (input, output) => {
+    'tui.command.execute': async (input: any) => {
       if (input.command === 'reasoning.toggle') {
         const cfgPath = `${directory}/opencode.json`;
         const cfg = await client.fs.readJson(cfgPath);

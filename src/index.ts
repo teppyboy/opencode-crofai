@@ -1,3 +1,2 @@
-import type { Plugin } from '@opencode-ai/plugin';
-
+// Re-export the plugin for use by npm consumers
 export { CrofAIPlugin } from './crofai-plugin';

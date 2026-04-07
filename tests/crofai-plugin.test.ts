@@ -71,7 +71,7 @@ describe('CrofAI Plugin', () => {
     ];
 
     // Mock fetch response
-    global.fetch = vi.fn().mockResolvedValue({
+    globalThis.fetch = vi.fn().mockResolvedValue({
       ok: true,
       json: async () => ({ data: mockModels }),
     });
@@ -126,7 +126,7 @@ describe('CrofAI Plugin', () => {
       },
     });
 
-    global.fetch = vi.fn().mockResolvedValue({
+    globalThis.fetch = vi.fn().mockResolvedValue({
       ok: true,
       json: async () => ({
         data: [
@@ -176,7 +176,7 @@ describe('CrofAI Plugin', () => {
       },
     });
 
-    global.fetch = vi.fn().mockResolvedValue({
+    globalThis.fetch = vi.fn().mockResolvedValue({
       ok: true,
       json: async () => ({
         data: [
@@ -218,7 +218,7 @@ describe('CrofAI Plugin', () => {
       },
     });
 
-    global.fetch = vi.fn().mockResolvedValue({
+    globalThis.fetch = vi.fn().mockResolvedValue({
       ok: true,
       json: async () => ({
         data: [
@@ -268,7 +268,7 @@ describe('CrofAI Plugin', () => {
       key: 'test-api-key',
     });
 
-    global.fetch = vi.fn().mockResolvedValue({
+    globalThis.fetch = vi.fn().mockResolvedValue({
       ok: false,
       status: 401,
       statusText: 'Unauthorized',
@@ -297,7 +297,7 @@ describe('CrofAI Plugin', () => {
       key: 'env-api-key',
     });
 
-    global.fetch = vi.fn().mockResolvedValue({
+    globalThis.fetch = vi.fn().mockResolvedValue({
       ok: true,
       json: async () => ({
         data: [
@@ -336,7 +336,7 @@ describe('CrofAI Plugin', () => {
       },
     });
 
-    global.fetch = vi.fn().mockResolvedValue({
+    globalThis.fetch = vi.fn().mockResolvedValue({
       ok: true,
       json: async () => ({
         data: [

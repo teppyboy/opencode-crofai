@@ -33,7 +33,7 @@ jobs:
           experimental: true
 
       - name: Build
-        run: mise run build
+        run: bun run build
 
       - id: inputs
         uses: simenandre/setup-inputs@v1
@@ -46,4 +46,4 @@ jobs:
           fi
 
           echo "Publishing with tag: $TAG"
-          mise run publish --tag "$TAG"
+          npm publish --access public --tag "$TAG" --provenance
