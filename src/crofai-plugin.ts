@@ -12,6 +12,12 @@ globalThis.fetch = fetch;
 
 export const CrofAIPlugin: Plugin = async ({ client, directory }: any) => {
   return {
+    config: async (opencodeConfig: any) => {
+      // Ensure crofai config is initialized
+      if (!opencodeConfig.crofai) {
+        opencodeConfig.crofai = { reasoning: 'none' };
+      }
+    },
     auth: {
       provider: 'crofai',
       async loader(getAuth, provider) {
