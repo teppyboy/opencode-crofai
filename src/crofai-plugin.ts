@@ -14,6 +14,7 @@ export const CrofAIPlugin: Plugin = async ({ client, directory }: any) => {
   return {
     // Inject the CrofAI provider into the OpenCode config so it appears in /connect
     config: async (opencodeConfig: any) => {
+      console.log('[CrofAI Plugin] Config hook called, initializing provider...');
       // Initialise the provider map if it doesn't exist
       opencodeConfig.provider = opencodeConfig.provider ?? {};
 
@@ -23,6 +24,10 @@ export const CrofAIPlugin: Plugin = async ({ client, directory }: any) => {
           baseURL: 'https://crof.ai/v1',
         },
       };
+      console.log(
+        '[CrofAI Plugin] Provider registered in config:',
+        JSON.stringify(opencodeConfig.provider)
+      );
     },
     auth: {
       provider: 'crofai',
@@ -72,13 +77,10 @@ export const CrofAIPlugin: Plugin = async ({ client, directory }: any) => {
         };
 
         const models = await fetchModels();
-
-        // Ensure provider.models exists
+        console.log(`[CrofAI Plugin] Retrieved ${models.length} available CrofAI models`);
         if (!provider.models) {
           provider.models = {};
         }
-
-        // Register models with display name fix for Lightning variants
         for (const model of models) {
           // Add "Lightning" suffix if the model ID contains "-lightning"
           const displayName = model.id.includes('-lightning')
