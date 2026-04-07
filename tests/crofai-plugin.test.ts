@@ -372,4 +372,22 @@ describe('CrofAI Plugin', () => {
       });
     }
   });
+
+  it('should inject crofai provider into config', async () => {
+    const { CrofAIPlugin } = await import('../src/index.ts');
+    const plugin = await CrofAIPlugin({
+      project: { name: 'test-project' },
+      client: mockClient,
+      $: {} as any,
+      directory: '/test/project',
+      worktree: '/test/worktree',
+    });
+
+    // Simulate the config hook
+    const cfg: any = {};
+    await plugin.config?.(cfg);
+
+    expect(cfg.provider?.crofai).toBeDefined();
+    expect(cfg.provider.crofai.options?.baseURL).toBe('https://crof.ai/v1');
+  });
 });

@@ -12,11 +12,17 @@ globalThis.fetch = fetch;
 
 export const CrofAIPlugin: Plugin = async ({ client, directory }: any) => {
   return {
+    // Inject the CrofAI provider into the OpenCode config so it appears in /connect
     config: async (opencodeConfig: any) => {
-      // Ensure crofai config is initialized
-      if (!opencodeConfig.crofai) {
-        opencodeConfig.crofai = { reasoning: 'none' };
-      }
+      // Initialise the provider map if it doesn't exist
+      opencodeConfig.provider = opencodeConfig.provider ?? {};
+
+      // Add CrofAI entry with default options
+      opencodeConfig.provider.crofai = {
+        options: {
+          baseURL: 'https://crof.ai/v1',
+        },
+      };
     },
     auth: {
       provider: 'crofai',
