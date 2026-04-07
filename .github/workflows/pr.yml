@@ -21,16 +21,19 @@ jobs:
         with:
           ref: ${{ github.event.pull_request.head.sha || github.ref }}
 
-      - name: Setup Tooling
-        uses: jdx/mise-action@d6e32c1796099e0f1f3ac741c220a8b7eae9e5dd
+      - name: Setup Bun
+        uses: oven-sh/setup-bun@v2
         with:
-          install: true
-          cache: true
-          experimental: true
+          bun-version: latest
 
-      - name: Run Checks
-        run: |
-          mise run setup
-          mise run lint
-          mise run test
-          mise run build
+      - name: Install dependencies
+        run: bun install
+
+      - name: Run Lint
+        run: bun run lint
+
+      - name: Run Tests
+        run: bun test
+
+      - name: Build
+        run: bun run build
