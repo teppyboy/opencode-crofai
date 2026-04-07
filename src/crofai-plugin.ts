@@ -31,6 +31,7 @@ export const CrofAIPlugin: Plugin = async ({ client, directory }: any) => {
     },
     auth: {
       provider: 'crofai',
+      methods: [],
       async loader(getAuth, provider) {
         const auth = await getAuth();
         const apiKey = auth.type === 'api' ? auth.key : '';
