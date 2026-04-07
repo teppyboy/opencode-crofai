@@ -1,4 +1,4 @@
-# @teppyboy/opencode-crofai
+# opencode-crofai
 
 A plugin for OpenCode that seamlessly integrates with CrofAI's OpenAI‑compatible API, featuring automatic model discovery, Lightning model disambiguation, and a reasoning level toggle controlled by **Ctrl + T**.
 
@@ -17,7 +17,7 @@ A plugin for OpenCode that seamlessly integrates with CrofAI's OpenAI‑compatib
 1. Install the plugin via npm:
 
 ```bash
-bun install @teppyboy/opencode-crofai
+bun install @tretrauit/opencode-crofai
 ```
 
 2. Add the plugin to your `opencode.json`:
@@ -25,7 +25,7 @@ bun install @teppyboy/opencode-crofai
 ```json
 {
   "$schema": "https://opencode.ai/config.json",
-  "plugin": ["@teppyboy/opencode-crofai"]
+  "plugin": ["@tretrauit/opencode-crofai"]
 }
 ```
 
@@ -38,7 +38,7 @@ bun install @teppyboy/opencode-crofai
 1. Clone the repository:
 
 ```bash
-git clone https://github.com/teppyboy/opencode-crofai.git
+git clone https://github.com/teppyboy/opencode-crofai
 cd opencode-crofai
 ```
 

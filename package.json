@@ -1,10 +1,10 @@
 {
-  "name": "@teppyboy/opencode-crofai",
+  "name": "@tretrauit/opencode-crofai",
   "version": "1.0.0",
   "description": "Adds CrofAI provider support to OpenCode with automatic model discovery, Lightning naming fix, and reasoning level toggle (Ctrl+T).",
   "author": {
-    "name": "teppyboy",
-    "email": "teppyboy@users.noreply.github.com"
+    "name": "tretrauit",
+    "email": "contact@tretrauit.me"
   },
   "type": "module",
   "exports": {
