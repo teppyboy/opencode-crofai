@@ -1,8 +1,13 @@
 import { describe, it, expect, vi, beforeEach } from 'vitest';
 
+// Mock the logger before importing the plugin
+vi.mock('../src/logger.ts', () => ({
+  log: vi.fn(),
+  initLogger: vi.fn().mockResolvedValue(undefined),
+}));
+
 describe('CrofAI Plugin', () => {
   let mockGetAuth: ReturnType<typeof vi.fn>;
-  let mockFs: ReturnType<typeof vi.fn>;
   let mockClient: any;
 
   beforeEach(() => {
@@ -11,23 +16,16 @@ describe('CrofAI Plugin', () => {
       key: 'test-api-key',
     });
 
-    mockFs = {
-      readJson: vi.fn(),
-      writeJson: vi.fn(),
-    };
-
     mockClient = {
       app: {
         log: vi.fn(),
       },
-      fs: mockFs,
     };
 
     vi.clearAllMocks();
   });
 
   it('should register models with correct display names', async () => {
-    // Mock model data from CrofAI (realistic response structure)
     const mockModels = [
       {
         id: 'kimi-k2.5',
@@ -70,17 +68,11 @@ describe('CrofAI Plugin', () => {
       },
     ];
 
-    // Mock fetch response
     globalThis.fetch = vi.fn().mockResolvedValue({
       ok: true,
       json: async () => ({ data: mockModels }),
     });
 
-    // Mock fs for config operations
-    mockFs.readJson.mockResolvedValue({});
-    mockFs.writeJson.mockResolvedValue(undefined);
-
-    // Import and run the plugin
     const { CrofAIPlugin } = await import('../src/index.ts');
     const plugin = await CrofAIPlugin({
       project: { name: 'test-project' },
@@ -90,55 +82,66 @@ describe('CrofAI Plugin', () => {
       worktree: '/test/worktree',
     });
 
-    // Call the loader to trigger model fetching and populate models
     const provider = {} as any;
-    await plugin.auth.loader(mockGetAuth, provider);
+    const ctx = { auth: { type: 'api' as const, key: 'test-api-key' } };
+    const models = await plugin.provider.models(provider, ctx);
 
-    // Check that models were added to the provider
-    expect(provider.models).toBeDefined();
-    expect(provider.models['kimi-k2.5-lightning']).toBeDefined();
-    expect(provider.models['kimi-k2.5']).toBeDefined();
-    expect(provider.models['glm-5']).toBeDefined();
+    // Correct display names
+    expect(models['kimi-k2.5-lightning'].name).toBe('MoonshotAI: Kimi K2.5 Lightning');
+    expect(models['kimi-k2.5'].name).toBe('MoonshotAI: Kimi K2.5');
+    expect(models['glm-5'].name).toBe('Z.ai: GLM 5');
 
-    // Check Lightning model has "Lightning" suffix
-    expect(provider.models['kimi-k2.5-lightning'].name).toBe('MoonshotAI: Kimi K2.5 Lightning');
-    expect(provider.models['kimi-k2.5'].name).toBe('MoonshotAI: Kimi K2.5');
-    expect(provider.models['glm-5'].name).toBe('Z.ai: GLM 5');
+    // Capabilities
+    expect(models['kimi-k2.5-lightning'].capabilities.reasoning).toBe(true);
+    expect(models['kimi-k2.5'].capabilities.reasoning).toBe(true);
+    expect(models['glm-5'].capabilities.reasoning).toBe(false);
 
-    // Verify reasoning flag is set correctly
-    expect(provider.models['kimi-k2.5-lightning'].reasoning).toBe(true);
-    expect(provider.models['kimi-k2.5'].reasoning).toBe(true);
-    expect(provider.models['glm-5'].reasoning).toBe(false);
+    // API config
+    expect(models['kimi-k2.5'].api.id).toBe('kimi-k2.5');
+    expect(models['kimi-k2.5'].api.url).toBe('https://crof.ai/v1');
+    expect(models['kimi-k2.5'].api.npm).toBe('@ai-sdk/openai-compatible');
+    expect(models['kimi-k2.5'].providerID).toBe('crofai');
 
-    // Verify context length and max tokens are set correctly
-    expect(provider.models['kimi-k2.5'].limit.context).toBe(262144);
-    expect(provider.models['kimi-k2.5'].limit.output).toBe(262144);
+    // Limits
+    expect(models['kimi-k2.5'].limit.context).toBe(262144);
+    expect(models['kimi-k2.5'].limit.output).toBe(262144);
 
-    // Verify cost calculations (pricing is per 1M tokens)
-    expect(provider.models['kimi-k2.5'].cost.input).toBe(0.35);
-    expect(provider.models['kimi-k2.5'].cost.output).toBeCloseTo(1.8, 10);
+    // Cost
+    expect(models['kimi-k2.5'].cost.input).toBe(0.35);
+    expect(models['kimi-k2.5'].cost.output).toBeCloseTo(1.8, 10);
   });
 
-  it('should toggle reasoning level via command', async () => {
-    mockFs.readJson.mockResolvedValue({
-      crofai: {
-        reasoning: 'none',
+  it('should expose reasoning variants for models that support reasoning', async () => {
+    const mockModels = [
+      {
+        id: 'kimi-k2.5',
+        name: 'MoonshotAI: Kimi K2.5',
+        custom_reasoning: false,
+        reasoning_effort: true,
+        context_length: 262144,
+        max_completion_tokens: 262144,
       },
-    });
+      {
+        id: 'kimi-k2.5-lightning',
+        name: 'MoonshotAI: Kimi K2.5',
+        custom_reasoning: true,
+        reasoning_effort: true,
+        context_length: 131072,
+        max_completion_tokens: 32768,
+      },
+      {
+        id: 'glm-5',
+        name: 'Z.ai: GLM 5',
+        custom_reasoning: false,
+        reasoning_effort: false,
+        context_length: 202752,
+        max_completion_tokens: 202752,
+      },
+    ];
 
     globalThis.fetch = vi.fn().mockResolvedValue({
       ok: true,
-      json: async () => ({
-        data: [
-          {
-            id: 'kimi-k2.5',
-            name: 'MoonshotAI: Kimi K2.5',
-            custom_reasoning: false,
-            context_length: 262144,
-            max_completion_tokens: 262144,
-          },
-        ],
-      }),
+      json: async () => ({ data: mockModels }),
     });
 
     const { CrofAIPlugin } = await import('../src/index.ts');
@@ -150,124 +153,23 @@ describe('CrofAI Plugin', () => {
       worktree: '/test/worktree',
     });
 
-    // Execute the toggle command
-    await plugin.command.crofaiToggleThinking.execute({}, mockClient);
+    const ctx = { auth: { type: 'api' as const, key: 'test-api-key' } };
+    const models = await plugin.provider.models({} as any, ctx);
 
-    // Verify config was updated
-    expect(mockFs.writeJson).toHaveBeenCalledWith('/test/project/opencode.json', {
-      crofai: {
-        reasoning: 'low',
-      },
-    });
+    // Reasoning-capable models have low/medium/high variants
+    expect(models['kimi-k2.5'].variants).toBeDefined();
+    expect(models['kimi-k2.5'].variants.low).toEqual({ reasoning_effort: 'low' });
+    expect(models['kimi-k2.5'].variants.medium).toEqual({ reasoning_effort: 'medium' });
+    expect(models['kimi-k2.5'].variants.high).toEqual({ reasoning_effort: 'high' });
 
-    // Verify log was called
-    expect(mockClient.app.log).toHaveBeenCalledWith({
-      level: 'info',
-      body: {
-        message: 'CrofAI reasoning level set to "low"',
-      },
-    });
-  });
+    expect(models['kimi-k2.5-lightning'].variants).toBeDefined();
+    expect(models['kimi-k2.5-lightning'].variants.low).toEqual({ reasoning_effort: 'low' });
 
-  it('should cycle reasoning level with Ctrl+T hook', async () => {
-    mockFs.readJson.mockResolvedValue({
-      crofai: {
-        reasoning: 'medium',
-      },
-    });
-
-    globalThis.fetch = vi.fn().mockResolvedValue({
-      ok: true,
-      json: async () => ({
-        data: [
-          {
-            id: 'kimi-k2.5',
-            name: 'MoonshotAI: Kimi K2.5',
-            custom_reasoning: false,
-            context_length: 262144,
-            max_completion_tokens: 262144,
-          },
-        ],
-      }),
-    });
-
-    const { CrofAIPlugin } = await import('../src/index.ts');
-    const plugin = await CrofAIPlugin({
-      project: { name: 'test-project' },
-      client: mockClient,
-      $: {} as any,
-      directory: '/test/project',
-      worktree: '/test/worktree',
-    });
-
-    // Simulate Ctrl+T keybinding (reasoning.toggle command)
-    await plugin['tui.command.execute']({ command: 'reasoning.toggle' }, {});
-
-    // Verify config was updated to next level
-    expect(mockFs.writeJson).toHaveBeenCalledWith('/test/project/opencode.json', {
-      crofai: {
-        reasoning: 'high',
-      },
-    });
-  });
-
-  it('should append reasoning note to system prompt when enabled', async () => {
-    mockFs.readJson.mockResolvedValue({
-      crofai: {
-        reasoning: 'medium',
-      },
-    });
-
-    globalThis.fetch = vi.fn().mockResolvedValue({
-      ok: true,
-      json: async () => ({
-        data: [
-          {
-            id: 'kimi-k2.5',
-            name: 'MoonshotAI: Kimi K2.5',
-            custom_reasoning: false,
-            context_length: 262144,
-            max_completion_tokens: 262144,
-          },
-        ],
-      }),
-    });
-
-    const { CrofAIPlugin } = await import('../src/index.ts');
-    const plugin = await CrofAIPlugin({
-      project: { name: 'test-project' },
-      client: mockClient,
-      $: {} as any,
-      directory: '/test/project',
-      worktree: '/test/worktree',
-    });
-
-    // Execute the transform hook
-    const input = {
-      messages: [
-        {
-          role: 'user',
-          content: 'Hello',
-        },
-      ],
-    };
-
-    const output = {
-      system: 'You are a helpful assistant.',
-    };
-
-    await plugin['experimental.chat.system.transform'](input, output);
-
-    // Verify reasoning note was appended
-    expect(output.system).toContain('[NOTE] Use reasoning level "medium" for this request.');
+    // Non-reasoning model has no variants
+    expect(models['glm-5'].variants).toBeUndefined();
   });
 
   it('should handle fetch errors gracefully', async () => {
-    mockGetAuth.mockResolvedValue({
-      type: 'api' as const,
-      key: 'test-api-key',
-    });
-
     globalThis.fetch = vi.fn().mockResolvedValue({
       ok: false,
       status: 401,
@@ -275,8 +177,6 @@ describe('CrofAI Plugin', () => {
     });
 
     const { CrofAIPlugin } = await import('../src/index.ts');
-
-    // Create plugin instance
     const plugin = await CrofAIPlugin({
       project: { name: 'test-project' },
       client: mockClient,
@@ -285,18 +185,13 @@ describe('CrofAI Plugin', () => {
       worktree: '/test/worktree',
     });
 
-    // Call the loader to trigger the error
-    await expect(plugin.auth.loader(mockGetAuth, {} as any)).rejects.toThrow(
+    const ctx = { auth: { type: 'api' as const, key: 'test-api-key' } };
+    await expect(plugin.provider.models({} as any, ctx)).rejects.toThrow(
       'Failed to fetch CrofAI models: 401 Unauthorized'
     );
   });
 
-  it('should handle API key from environment variable', async () => {
-    mockGetAuth.mockResolvedValue({
-      type: 'api' as const,
-      key: 'env-api-key',
-    });
-
+  it('should return models when auth key is provided via context', async () => {
     globalThis.fetch = vi.fn().mockResolvedValue({
       ok: true,
       json: async () => ({
@@ -321,56 +216,11 @@ describe('CrofAI Plugin', () => {
       worktree: '/test/worktree',
     });
 
-    const provider = {} as any;
-    await plugin.auth.loader(mockGetAuth, provider);
+    const ctx = { auth: { type: 'api' as const, key: 'env-api-key' } };
+    const models = await plugin.provider.models({} as any, ctx);
 
-    expect(provider.models).toBeDefined();
-  });
-
-  it('should cycle through all four reasoning levels', async () => {
-    const levels = ['none', 'low', 'medium', 'high'] as const;
-
-    mockFs.readJson.mockResolvedValue({
-      crofai: {
-        reasoning: 'none',
-      },
-    });
-
-    globalThis.fetch = vi.fn().mockResolvedValue({
-      ok: true,
-      json: async () => ({
-        data: [
-          {
-            id: 'kimi-k2.5',
-            name: 'MoonshotAI: Kimi K2.5',
-            custom_reasoning: false,
-            context_length: 262144,
-            max_completion_tokens: 262144,
-          },
-        ],
-      }),
-    });
-
-    const { CrofAIPlugin } = await import('../src/index.ts');
-    const plugin = await CrofAIPlugin({
-      project: { name: 'test-project' },
-      client: mockClient,
-      $: {} as any,
-      directory: '/test/project',
-      worktree: '/test/worktree',
-    });
-
-    // Test each level
-    for (let i = 0; i < levels.length; i++) {
-      await plugin['tui.command.execute']({ command: 'reasoning.toggle' }, {});
-
-      const expectedLevel = levels[(i + 1) % levels.length];
-      expect(mockFs.writeJson).toHaveBeenCalledWith('/test/project/opencode.json', {
-        crofai: {
-          reasoning: expectedLevel,
-        },
-      });
-    }
+    expect(models).toBeDefined();
+    expect(models['kimi-k2.5']).toBeDefined();
   });
 
   it('should inject crofai provider into config', async () => {
@@ -383,11 +233,49 @@ describe('CrofAI Plugin', () => {
       worktree: '/test/worktree',
     });
 
-    // Simulate the config hook
     const cfg: any = {};
     await plugin.config?.(cfg);
 
     expect(cfg.provider?.crofai).toBeDefined();
     expect(cfg.provider.crofai.options?.baseURL).toBe('https://crof.ai/v1');
+    expect(cfg.provider.crofai.npm).toBe('@ai-sdk/openai-compatible');
+  });
+
+  it('should provide API key auth method in auth hook', async () => {
+    const { CrofAIPlugin } = await import('../src/index.ts');
+    const plugin = await CrofAIPlugin({
+      project: { name: 'test-project' },
+      client: mockClient,
+      $: {} as any,
+      directory: '/test/project',
+      worktree: '/test/worktree',
+    });
+
+    expect(plugin.auth).toBeDefined();
+    expect(plugin.auth?.provider).toBe('crofai');
+    expect(plugin.auth?.methods).toHaveLength(1);
+    expect(plugin.auth?.methods[0].type).toBe('api');
+  });
+
+  it('should inject Authorization header in auth loader', async () => {
+    globalThis.fetch = vi.fn().mockResolvedValue({ ok: true, status: 200 });
+
+    const { CrofAIPlugin } = await import('../src/index.ts');
+    const plugin = await CrofAIPlugin({
+      project: { name: 'test-project' },
+      client: mockClient,
+      $: {} as any,
+      directory: '/test/project',
+      worktree: '/test/worktree',
+    });
+
+    const result = await plugin.auth!.loader!(mockGetAuth, {} as any);
+
+    expect(result.apiKey).toBe('test-api-key');
+
+    // Make a request through the fetch wrapper
+    await result.fetch('https://example.com', {});
+    const calledHeaders = new Headers((globalThis.fetch as any).mock.calls[0][1].headers);
+    expect(calledHeaders.get('Authorization')).toBe('Bearer test-api-key');
   });
 });

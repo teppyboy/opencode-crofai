@@ -1,37 +1,25 @@
 # opencode-crofai
 
-A plugin for OpenCode that seamlessly integrates with CrofAI's OpenAI‑compatible API, featuring automatic model discovery, Lightning model disambiguation, and a reasoning level toggle controlled by **Ctrl + T**.
+A plugin for OpenCode that seamlessly integrates with CrofAI's OpenAI‑compatible API.
 
 ## Features
 
 - **Automatic Model Discovery**: Fetches all available models from CrofAI and registers them with OpenCode
 - **Lightning Model Naming**: Models with IDs containing `-lightning` (e.g., `kimi-k2.5-lightning`) are displayed as `<DisplayName> Lightning` to distinguish them from the non‑lightning version
-- **Reasoning Level Toggle**: Use the built‑in **Ctrl + T** shortcut to cycle through four reasoning levels: `none`, `low`, `medium`, `high`
+- **Reasoning Level Toggle**: Use the built‑in **Ctrl + T** shortcut to cycle through four reasoning levels: `none`, `low`, `medium`, `high`
 - **Optimized API Handling**: 30‑second timeout, proper error handling, and cost calculation
-- **OpenAI‑Compatible**: Works seamlessly with CrofAI's OpenAI‑compatible API endpoint
 
 ## Installation
 
-### Via npm (Recommended)
+### Via opencode (Recommended)
 
-1. Install the plugin via npm:
+1. Install the plugin via opencode:
 
 ```bash
-bun install @tretrauit/opencode-crofai
+opencode plugin -g @tretrauit/opencode-crofai
 ```
 
-2. Add the plugin to your `opencode.json`:
-
-```json
-{
-  "$schema": "https://opencode.ai/config.json",
-  "plugin": ["@tretrauit/opencode-crofai"]
-}
-```
-
-3. Add your CrofAI API key via the `/connect` command in OpenCode.
-
-4. Restart OpenCode (or reload plugins) to activate the plugin.
+2. Add your CrofAI API key via the `/connect` command in OpenCode.
 
 ### Via local development
 
@@ -74,35 +62,41 @@ Available Models:
 
 ### Reasoning Level Toggle
 
-Control the reasoning level using the built‑in **Ctrl + T** shortcut:
+For models where reasoning is supported, you can control the reasoning level using the built‑in **Ctrl + T** shortcut
+
+## Logging
+
+The plugin logs all activity to a file for debugging purposes when OpenCode is launched with debugging in arguments. Logs are stored at:
 
 ```
-Press Ctrl+T to cycle through: none → low → medium → high → none
+C:\Users\<username>\.local\share\opencode\log\opencode-crofai\plugin-<date>.log
 ```
 
-The plugin stores the current reasoning level in your project's `opencode.json`:
+**On Windows:**
 
-```json
-{
-  "crofai": {
-    "reasoning": "medium"
-  }
-}
+```
+C:\Users\tretrauit\.local\share\opencode\log\opencode-crofai\plugin-2026-04-07-133736.log
 ```
 
-The reasoning level is automatically reflected in the system prompt when enabled.
+**On Linux/macOS:**
 
-### Configuration
+```
+~/.local/share/opencode/log/opencode-crofai/plugin-2026-04-07-133736.log
+```
 
-You can also set the reasoning level directly in your `opencode.json`:
+Each log entry includes a timestamp and detailed information about plugin operations, including:
 
-```json
-{
-  "$schema": "https://opencode.ai/config.json",
-  "crofai": {
-    "reasoning": "high"
-  }
-}
+- Plugin initialization
+- Provider registration
+- Model fetching and processing
+- Configuration updates
+
+Example log entry:
+
+```
+[2026-04-07T14:18:03.029Z] [CrofAI Plugin] Plugin initializing...
+[2026-04-07T14:18:03.031Z] [CrofAI Plugin] Config hook called - registering provider
+[2026-04-07T14:18:03.032Z] [CrofAI Plugin] Retrieved 10 available CrofAI models
 ```
 
 ## Architecture
@@ -117,18 +111,8 @@ The plugin uses OpenCode's plugin system to:
    - Cost calculations (per 1M tokens)
    - Context length and max output tokens
    - Modalities information
-4. **Reasoning Toggle**: Listens for the built‑in `reasoning.toggle` UI command (triggered by Ctrl + T) and cycles through the four levels
+4. **Reasoning Toggle**: Listens for the built‑in `reasoning.toggle` UI command (triggered by Ctrl + T) and cycles through the four levels
 5. **System Prompt Injection**: Uses the `experimental.chat.system.transform` hook to add reasoning directives when enabled
-
-## Testing
-
-Run the test suite:
-
-```bash
-npm test
-```
-
-All tests are located in the `tests/` directory and use Vitest.
 
 ## Development
 
@@ -163,25 +147,6 @@ Contributions are welcome! Please feel free to open an issue or submit a pull re
 ## License
 
 See the [LICENSE](LICENSE) file for details.
-
-## Changelog
-
-### v1.0.0
-
-- Initial release
-- Automatic model discovery from CrofAI
-
-### v1.1.0
-
-- Disabled GitHub Actions workflows
-- Removed mist references
-- Provider registration completed
-- Lightning model naming fix
-- Reasoning level toggle via Ctrl + T
-- Four reasoning levels: none, low, medium, high
-- Optimized API handling with timeout and error handling
-- Cost calculation support
-- Full test coverage
 
 ## References
 

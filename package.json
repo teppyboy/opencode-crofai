@@ -1,7 +1,7 @@
 {
   "name": "@tretrauit/opencode-crofai",
-  "version": "1.1.4",
-  "description": "Adds CrofAI provider support to OpenCode with automatic model discovery, Lightning naming fix, and reasoning level toggle (Ctrl+T).",
+  "version": "1.2.0",
+  "description": "Adds CrofAI provider support to OpenCode.",
   "author": {
     "name": "tretrauit",
     "email": "contact@tretrauit.me"
@@ -54,5 +54,8 @@
     "prettier": "^3.2.4",
     "typescript-eslint": "^8.47.0",
     "vitest": "^3.2.4"
+  },
+  "dependencies": {
+    "@tretrauit/opencode-crofai": "."
   }
 }
