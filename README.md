@@ -170,6 +170,12 @@ See the [LICENSE](LICENSE) file for details.
 
 - Initial release
 - Automatic model discovery from CrofAI
+
+### v1.1.0
+
+- Disabled GitHub Actions workflows
+- Removed mist references
+- Provider registration completed
 - Lightning model naming fix
 - Reasoning level toggle via Ctrl + T
 - Four reasoning levels: none, low, medium, high
