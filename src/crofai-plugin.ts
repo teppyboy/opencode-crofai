@@ -12,6 +12,12 @@ globalThis.fetch = fetch;
 
 export const CrofAIPlugin: Plugin = async ({ client, directory }: any) => {
   return {
+    // Expose the provider for the UI
+    providers: {
+      crofai: {
+        name: 'CrofAI',
+      },
+    },
     auth: {
       provider: 'crofai',
       async loader(getAuth, provider) {
