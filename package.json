@@ -11,9 +11,16 @@
   "exports": {
     ".": {
       "types": "./dist/index.d.ts",
-      "default": "./dist/index.js"
+      "import": "./dist/index.js"
     },
-    "./server": "./dist/index.js"
+    "./server": {
+      "types": "./dist/index.d.ts",
+      "import": "./dist/index.js"
+    },
+    "./plugin": {
+      "types": "./src/plugin.d.ts",
+      "import": "./plugin.js"
+    }
   },
   "repository": {
     "type": "git",
