@@ -16,7 +16,7 @@ A plugin for OpenCode that seamlessly integrates with CrofAI's OpenAI‑compatib
 Paste this into any LLM agent (Claude Code, OpenCode, Cursor, etc.):
 
 ```
-Install the opencode-claude-auth plugin and configure it by following: https://raw.githubusercontent.com/griffinmartin/opencode-claude-auth/main/installation.md
+Install the opencode-crofai plugin and configure it by following: https://raw.githubusercontent.com/teppyboy/opencode-crofai/main/installation.md
 ```
 
 ### Via OpenCode CLI
