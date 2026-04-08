@@ -120,7 +120,8 @@ export const CrofAIPlugin: Plugin = async (input: any) => {
               temperature: true,
               reasoning: supportsReasoning,
               attachment: inputMods.includes('image') || inputMods.includes('pdf'),
-              toolcall: true,
+              // Every model should be able to support tool calls now.
+              toolcall: model.supports_tool_calls ?? true,
               input: {
                 text: inputMods.includes('text'),
                 audio: inputMods.includes('audio'),
@@ -147,9 +148,10 @@ export const CrofAIPlugin: Plugin = async (input: any) => {
                 write: 0,
               },
             },
+            // 202752 because of Z.ai GLM-5.1 and defined "OpenCode Integration" https://crof.ai/docs
             limit: {
-              context: model.context_length || 128000,
-              output: model.max_completion_tokens || 4096,
+              context: model.context_length || 202752,
+              output: model.max_completion_tokens || 202752,
             },
             status: 'active' as const,
             options: {},
@@ -229,4 +231,5 @@ interface CrofAIModel {
     cache_prompt?: string;
   };
   open_weights?: boolean;
+  supports_tool_calls?: boolean;
 }

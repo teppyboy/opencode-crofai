@@ -23,10 +23,9 @@ export async function initLogger(_client: any) {
   initialized = true;
 
   // Check environment variables synchronously
-  const debugEnv = process.env.DEBUG?.toLowerCase();
-  const logLevelEnv = process.env.LOG_LEVEL?.toUpperCase();
+  const debugEnv = process.env.OPENCODE_PLUGIN_CROFAI_DEBUG?.toLowerCase();
 
-  if (debugEnv !== '1' && debugEnv !== 'true' && logLevelEnv !== 'DEBUG') {
+  if (debugEnv !== '1' && debugEnv !== 'true') {
     return;
   }
 

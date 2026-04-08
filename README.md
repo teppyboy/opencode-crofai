@@ -74,7 +74,7 @@ For models where reasoning is supported, you can control the reasoning level usi
 
 ## Logging
 
-The plugin logs all activity to a file for debugging purposes when OpenCode is launched with debugging in arguments. Logs are stored at:
+The plugin logs all activity to a file for debugging purposes when OpenCode is launched with the environment variable `OPENCODE_PLUGIN_CROFAI_DEBUG=1`. Logs are stored at:
 
 ```
 C:\Users\<username>\.local\share\opencode\log\opencode-crofai\plugin-<date>.log
@@ -83,7 +83,7 @@ C:\Users\<username>\.local\share\opencode\log\opencode-crofai\plugin-<date>.log
 **On Windows:**
 
 ```
-C:\Users\tretrauit\.local\share\opencode\log\opencode-crofai\plugin-2026-04-07-133736.log
+C:\Users\<username>\.local\share\opencode\log\opencode-crofai\plugin-2026-04-07-133736.log
 ```
 
 **On Linux/macOS:**
