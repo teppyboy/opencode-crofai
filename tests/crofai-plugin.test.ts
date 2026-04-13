@@ -66,6 +66,32 @@ describe('CrofAI Plugin', () => {
           completion: '0.00000190',
         },
       },
+      {
+        id: 'glm-5.1',
+        name: 'Z.ai: GLM-5.1',
+        family: 'Zhipu AI',
+        custom_reasoning: true,
+        reasoning_effort: true,
+        context_length: 202752,
+        max_completion_tokens: 202752,
+        pricing: {
+          prompt: '0.00000048',
+          completion: '0.00000190',
+        },
+      },
+      {
+        id: 'glm-5.1-precision',
+        name: 'Z.ai: GLM-5.1',
+        family: 'Zhipu AI',
+        custom_reasoning: true,
+        reasoning_effort: true,
+        context_length: 202752,
+        max_completion_tokens: 202752,
+        pricing: {
+          prompt: '0.00000096',
+          completion: '0.00000380',
+        },
+      },
     ];
 
     globalThis.fetch = vi.fn().mockResolvedValue({
@@ -90,6 +116,8 @@ describe('CrofAI Plugin', () => {
     expect(models['kimi-k2.5-lightning'].name).toBe('MoonshotAI: Kimi K2.5 Lightning');
     expect(models['kimi-k2.5'].name).toBe('MoonshotAI: Kimi K2.5');
     expect(models['glm-5'].name).toBe('Z.ai: GLM 5');
+    expect(models['glm-5.1'].name).toBe('Z.ai: GLM-5.1');
+    expect(models['glm-5.1-precision'].name).toBe('Z.ai: GLM-5.1 Precision');
 
     // Capabilities
     expect(models['kimi-k2.5-lightning'].capabilities.reasoning).toBe(true);
