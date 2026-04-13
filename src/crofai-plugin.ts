@@ -84,10 +84,12 @@ export const CrofAIPlugin: Plugin = async (input: any) => {
         for (const model of models) {
           log(`[CrofAI Plugin] Processing model: ${model.id}`);
           
-          // Dynamically detect variant suffix (e.g., -lightning, -precision)
-          // and append it to the display name
-          const variantMatch = model.id.match(/-([a-z]+)$/i);
-          const displayName = variantMatch
+          // Detect known variant suffixes (e.g., -lightning, -precision)
+          // and append them to the display name to distinguish model variants
+          const variantMatch = model.id.match(/-(lightning|precision|flash|turbo|extended|plus|pro|max|ultra)$/i);
+          const variantLabel = variantMatch ? variantMatch[1].toLowerCase() : '';
+          const nameAlreadyHasVariant = variantLabel && model.name.toLowerCase().endsWith(variantLabel);
+          const displayName = variantMatch && !nameAlreadyHasVariant
             ? `${model.name} ${variantMatch[1].charAt(0).toUpperCase() + variantMatch[1].slice(1)}`
             : model.name;
 

@@ -139,6 +139,48 @@ describe('CrofAI Plugin', () => {
     expect(models['kimi-k2.5'].cost.output).toBeCloseTo(1.8, 10);
   });
 
+  it('should not duplicate variant suffix already present in model name', async () => {
+    const mockModels = [
+      {
+        id: 'glm-4.7',
+        name: 'Z.AI: GLM 4.7',
+        custom_reasoning: false,
+        reasoning_effort: false,
+        context_length: 202752,
+        max_completion_tokens: 202752,
+      },
+      {
+        id: 'glm-4.7-flash',
+        name: 'Z.AI: GLM 4.7 Flash',
+        custom_reasoning: false,
+        reasoning_effort: false,
+        context_length: 131072,
+        max_completion_tokens: 65536,
+      },
+    ];
+
+    globalThis.fetch = vi.fn().mockResolvedValue({
+      ok: true,
+      json: async () => ({ data: mockModels }),
+    });
+
+    const { CrofAIPlugin } = await import('../src/index.ts');
+    const plugin = await CrofAIPlugin({
+      project: { name: 'test-project' },
+      client: mockClient,
+      $: {} as any,
+      directory: '/test/project',
+      worktree: '/test/worktree',
+    });
+
+    const ctx = { auth: { type: 'api' as const, key: 'test-api-key' } };
+    const models = await plugin.provider.models({} as any, ctx);
+
+    // Variant suffix not duplicated when already in name
+    expect(models['glm-4.7-flash'].name).toBe('Z.AI: GLM 4.7 Flash');
+    expect(models['glm-4.7'].name).toBe('Z.AI: GLM 4.7');
+  });
+
   it('should expose reasoning variants for models that support reasoning', async () => {
     const mockModels = [
       {
