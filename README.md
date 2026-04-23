@@ -88,8 +88,8 @@ GitHub Actions can publish to npm automatically from tags.
 
 Repository setup:
 
-- add `NPM_TOKEN` to GitHub Actions secrets
-- token must have publish access to `@tretrauit/opencode-crofai`
+- configure npm trusted publishing for this GitHub repository
+- allow this workflow to publish `@tretrauit/opencode-crofai`
 
 Release flow:
 
@@ -107,7 +107,7 @@ Workflow behavior:
 - verifies tag matches `package.json` version
 - runs tests and build
 - runs `npm pack --dry-run`
-- publishes to npm
+- publishes to npm with provenance via GitHub Actions OIDC
 
 ## Links
 
