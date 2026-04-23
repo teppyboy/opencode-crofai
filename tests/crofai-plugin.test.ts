@@ -181,6 +181,47 @@ describe('CrofAI Plugin', () => {
     expect(models['glm-4.7'].name).toBe('Z.AI: GLM 4.7');
   });
 
+  it('should not duplicate parenthesized variant suffixes already present in model name', async () => {
+    const mockModels = [
+      {
+        id: 'kimi-k2.5-lightning',
+        name: 'MoonshotAI: Kimi K2.5 (Lightning)',
+        custom_reasoning: true,
+        reasoning_effort: true,
+        context_length: 131072,
+        max_completion_tokens: 32768,
+      },
+      {
+        id: 'glm-5.1-precision',
+        name: 'Z.ai: GLM 5.1 (Precision)',
+        custom_reasoning: true,
+        reasoning_effort: true,
+        context_length: 202752,
+        max_completion_tokens: 202752,
+      },
+    ];
+
+    globalThis.fetch = vi.fn().mockResolvedValue({
+      ok: true,
+      json: async () => ({ data: mockModels }),
+    });
+
+    const { CrofAIPlugin } = await import('../src/index.ts');
+    const plugin = await CrofAIPlugin({
+      project: { name: 'test-project' },
+      client: mockClient,
+      $: {} as any,
+      directory: '/test/project',
+      worktree: '/test/worktree',
+    });
+
+    const ctx = { auth: { type: 'api' as const, key: 'test-api-key' } };
+    const models = await plugin.provider.models({} as any, ctx);
+
+    expect(models['kimi-k2.5-lightning'].name).toBe('MoonshotAI: Kimi K2.5 (Lightning)');
+    expect(models['glm-5.1-precision'].name).toBe('Z.ai: GLM 5.1 (Precision)');
+  });
+
   it('should expose reasoning variants for models that support reasoning', async () => {
     const mockModels = [
       {

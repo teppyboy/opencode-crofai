@@ -40,7 +40,16 @@ try {
   if (data.data && Array.isArray(data.data)) {
     console.log(`\nRetrieved ${data.data.length} available CrofAI models:`);
     data.data.forEach((model: any) => {
-      const displayName = model.id.includes('-lightning') ? `${model.name} Lightning` : model.name;
+      const variantMatch = model.id.match(
+        /-(lightning|precision|flash|turbo|extended|plus|pro|max|ultra)$/i
+      );
+      const variantLabel = variantMatch ? variantMatch[1].toLowerCase() : '';
+      const nameAlreadyHasVariant =
+        variantLabel !== '' && new RegExp(`(?:\\s|\\()${variantLabel}\\)?$`, 'i').test(model.name);
+      const displayName =
+        variantMatch && !nameAlreadyHasVariant
+          ? `${model.name} ${variantMatch[1].charAt(0).toUpperCase() + variantMatch[1].slice(1)}`
+          : model.name;
       console.log(`  - ${model.id}: ${displayName}`);
     });
   } else {

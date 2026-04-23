@@ -85,13 +85,18 @@ export const CrofAIPlugin: Plugin = async (input: any) => {
           log(`[CrofAI Plugin] Processing model: ${model.id}`);
           
           // Detect known variant suffixes (e.g., -lightning, -precision)
-          // and append them to the display name to distinguish model variants
-          const variantMatch = model.id.match(/-(lightning|precision|flash|turbo|extended|plus|pro|max|ultra)$/i);
+          // and append them unless the provider name already ends with that variant,
+          // including parenthesized forms like "(Lightning)".
+          const variantMatch = model.id.match(
+            /-(lightning|precision|flash|turbo|extended|plus|pro|max|ultra)$/i
+          );
           const variantLabel = variantMatch ? variantMatch[1].toLowerCase() : '';
-          const nameAlreadyHasVariant = variantLabel && model.name.toLowerCase().endsWith(variantLabel);
-          const displayName = variantMatch && !nameAlreadyHasVariant
-            ? `${model.name} ${variantMatch[1].charAt(0).toUpperCase() + variantMatch[1].slice(1)}`
-            : model.name;
+          const nameAlreadyHasVariant =
+            variantLabel !== '' && new RegExp(`(?:\\s|\\()${variantLabel}\\)?$`, 'i').test(model.name);
+          const displayName =
+            variantMatch && !nameAlreadyHasVariant
+              ? `${model.name} ${variantMatch[1].charAt(0).toUpperCase() + variantMatch[1].slice(1)}`
+              : model.name;
 
           // Parse modalities into capabilities
           const inputMods = model.modalities?.input ?? ['text'];
