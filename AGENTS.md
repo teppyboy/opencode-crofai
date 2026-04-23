@@ -7,7 +7,6 @@
 - **Single Test**: `bun test tests/crofai-plugin.test.ts` (use file glob pattern)
 - **Watch Mode**: `bun test --watch`
 - **Lint**: `bun run lint` (eslint)
-- **Fix Lint**: `bun run lint:fix` (eslint --fix)
 - **Format**: `bun run format` (prettier)
 
 ## Code Style Guidelines
@@ -62,13 +61,13 @@
 
 - **Type**: ES Module package for Bun modules
 - **Target**: Bun runtime, ES2021+
-- **Purpose**: OpenCode plugin for CrofAI integration
+- **Purpose**: OpenCode plugin for CrofAI integration, with reusable OpenAI-compatible provider factory for forks
 
 ## CrofAI Integration Plugin
 
 ### Overview
 
-A plugin that connects OpenCode to CrofAI's OpenAI‑compatible API. It automatically discovers available models, distinguishes Lightning variants, and respects the UI‑controlled reasoning level (Ctrl + T).
+A plugin that connects OpenCode to CrofAI's OpenAI-compatible API. It automatically discovers available models, caches them for fast startup, refreshes the cache in background, and distinguishes model variants like Lightning and Precision without duplicate suffixes.
 
 ### Installation
 
@@ -77,7 +76,7 @@ Add the plugin to your `opencode.json`:
 ```json
 {
   "$schema": "https://opencode.ai/config.json",
-  "plugin": ["@teppyboy/opencode-crofai"]
+  "plugin": ["@tretrauit/opencode-crofai"]
 }
 ```
 
@@ -85,27 +84,44 @@ OpenCode will fetch the package from npm at startup and install it with Bun.
 
 ### Configuration
 
-The plugin stores its settings under the `crofai` key:
+Connect the provider in OpenCode with `/connect` and enter your CrofAI API key.
+
+For local development, point OpenCode at the built plugin:
 
 ```json
 {
-  "crofai": {
-    "reasoning": "medium" // one of "none", "low", "medium", "high"
-  }
+  "$schema": "https://opencode.ai/config.json",
+  "plugin": ["./dist/index.js"]
 }
 ```
 
-The reasoning level is changed by the built‑in **Ctrl + T** shortcut; the plugin updates the above field automatically.
+### Current Behavior
+
+- Model list fetched from `GET /v1/models`
+- Model cache stored in `.memory/crofai-models.json`
+- Cached models used immediately on startup when available
+- Cache refreshed in background on startup
+- Cached models continue to work if the endpoint is unavailable
+- Reasoning-capable models expose `low`, `medium`, and `high` variants
 
 ### Model Naming Fix
 
-Models whose IDs contain `-lightning` are displayed as `<DisplayName> Lightning` (e.g., `kimi-k2.5-lightning` → "Kimi K2.5 Lightning") so they are not confused with the non‑Lightning counterpart.
+Models with variant suffixes like `-lightning`, `-precision`, and `-flash` have normalized display names without duplicate suffixes. Example: `kimi-k2.5-lightning` stays `MoonshotAI: Kimi K2.5 (Lightning)` if provider metadata already includes `(Lightning)`.
 
-### Hooks Implemented
+### Architecture
 
-- `auth.loader` – injects the CrofAI API key and registers models
-- `experimental.chat.system.transform` – adds a note about the current reasoning level
-- `tui.command.execute` – listens for the `reasoning.toggle` UI command (Ctrl + T) and cycles the level
+- `src/crofai-plugin.ts` - CrofAI-specific wrapper config
+- `src/openai-compatible-plugin.ts` - reusable OpenAI-compatible provider factory
+- `src/logger.ts` - optional debug logger
+
+Factory exports available from `src/index.ts`:
+
+- `createOpenAICompatiblePlugin`
+- `buildVariantDisplayName`
+- `createReasoningVariants`
+- `OpenAICompatibleModel` type
+
+Forking another provider should usually mean creating a thin wrapper similar to `src/crofai-plugin.ts` with a different `providerID`, `providerName`, `baseURL`, auth prompt, and cache file name.
 
 ### Development
 
