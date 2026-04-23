@@ -82,6 +82,33 @@ bun run lint
 bun run format
 ```
 
+## Release
+
+GitHub Actions can publish to npm automatically from tags.
+
+Repository setup:
+
+- add `NPM_TOKEN` to GitHub Actions secrets
+- token must have publish access to `@tretrauit/opencode-crofai`
+
+Release flow:
+
+```bash
+# bump package.json version first
+git commit -am "chore: bump version to vX.Y.Z"
+git tag vX.Y.Z
+git push
+git push --tags
+```
+
+Workflow behavior:
+
+- triggers on tags matching `v*`
+- verifies tag matches `package.json` version
+- runs tests and build
+- runs `npm pack --dry-run`
+- publishes to npm
+
 ## Links
 
 - OpenCode plugin docs: https://opencode.ai/docs/plugins/
