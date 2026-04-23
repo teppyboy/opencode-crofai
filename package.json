@@ -1,6 +1,6 @@
 {
   "name": "@tretrauit/opencode-crofai",
-  "version": "1.2.5",
+  "version": "1.2.6",
   "description": "Adds CrofAI provider support to OpenCode.",
   "author": {
     "name": "tretrauit",
