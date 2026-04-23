@@ -1,4 +1,7 @@
 import { describe, it, expect, vi, beforeEach } from 'vitest';
+import { existsSync, mkdirSync, mkdtempSync, readFileSync, rmSync, writeFileSync } from 'fs';
+import { join } from 'path';
+import { tmpdir } from 'os';
 
 // Mock the logger before importing the plugin
 vi.mock('../src/logger.ts', () => ({
@@ -9,6 +12,21 @@ vi.mock('../src/logger.ts', () => ({
 describe('CrofAI Plugin', () => {
   let mockGetAuth: ReturnType<typeof vi.fn>;
   let mockClient: any;
+
+  const createPluginInput = () => {
+    const testDir = mkdtempSync(join(tmpdir(), 'opencode-crofai-test-'));
+    return {
+      input: {
+        project: { name: 'test-project' },
+        client: mockClient,
+        $: {} as any,
+        directory: testDir,
+        worktree: testDir,
+      },
+      testDir,
+      cleanup: () => rmSync(testDir, { recursive: true, force: true }),
+    };
+  };
 
   beforeEach(() => {
     mockGetAuth = vi.fn().mockResolvedValue({
@@ -99,18 +117,15 @@ describe('CrofAI Plugin', () => {
       json: async () => ({ data: mockModels }),
     });
 
-    const { CrofAIPlugin } = await import('../src/index.ts');
-    const plugin = await CrofAIPlugin({
-      project: { name: 'test-project' },
-      client: mockClient,
-      $: {} as any,
-      directory: '/test/project',
-      worktree: '/test/worktree',
-    });
+    const { input, cleanup } = createPluginInput();
 
-    const provider = {} as any;
-    const ctx = { auth: { type: 'api' as const, key: 'test-api-key' } };
-    const models = await plugin.provider.models(provider, ctx);
+    try {
+      const { CrofAIPlugin } = await import('../src/index.ts');
+      const plugin = await CrofAIPlugin(input);
+
+      const provider = {} as any;
+      const ctx = { auth: { type: 'api' as const, key: 'test-api-key' } };
+      const models = await plugin.provider.models(provider, ctx);
 
     // Correct display names
     expect(models['kimi-k2.5-lightning'].name).toBe('MoonshotAI: Kimi K2.5 Lightning');
@@ -136,7 +151,10 @@ describe('CrofAI Plugin', () => {
 
     // Cost
     expect(models['kimi-k2.5'].cost.input).toBe(0.35);
-    expect(models['kimi-k2.5'].cost.output).toBeCloseTo(1.8, 10);
+      expect(models['kimi-k2.5'].cost.output).toBeCloseTo(1.8, 10);
+    } finally {
+      cleanup();
+    }
   });
 
   it('should not duplicate variant suffix already present in model name', async () => {
@@ -164,21 +182,21 @@ describe('CrofAI Plugin', () => {
       json: async () => ({ data: mockModels }),
     });
 
-    const { CrofAIPlugin } = await import('../src/index.ts');
-    const plugin = await CrofAIPlugin({
-      project: { name: 'test-project' },
-      client: mockClient,
-      $: {} as any,
-      directory: '/test/project',
-      worktree: '/test/worktree',
-    });
+    const { input, cleanup } = createPluginInput();
 
-    const ctx = { auth: { type: 'api' as const, key: 'test-api-key' } };
-    const models = await plugin.provider.models({} as any, ctx);
+    try {
+      const { CrofAIPlugin } = await import('../src/index.ts');
+      const plugin = await CrofAIPlugin(input);
 
-    // Variant suffix not duplicated when already in name
-    expect(models['glm-4.7-flash'].name).toBe('Z.AI: GLM 4.7 Flash');
-    expect(models['glm-4.7'].name).toBe('Z.AI: GLM 4.7');
+      const ctx = { auth: { type: 'api' as const, key: 'test-api-key' } };
+      const models = await plugin.provider.models({} as any, ctx);
+
+      // Variant suffix not duplicated when already in name
+      expect(models['glm-4.7-flash'].name).toBe('Z.AI: GLM 4.7 Flash');
+      expect(models['glm-4.7'].name).toBe('Z.AI: GLM 4.7');
+    } finally {
+      cleanup();
+    }
   });
 
   it('should not duplicate parenthesized variant suffixes already present in model name', async () => {
@@ -206,20 +224,20 @@ describe('CrofAI Plugin', () => {
       json: async () => ({ data: mockModels }),
     });
 
-    const { CrofAIPlugin } = await import('../src/index.ts');
-    const plugin = await CrofAIPlugin({
-      project: { name: 'test-project' },
-      client: mockClient,
-      $: {} as any,
-      directory: '/test/project',
-      worktree: '/test/worktree',
-    });
+    const { input, cleanup } = createPluginInput();
 
-    const ctx = { auth: { type: 'api' as const, key: 'test-api-key' } };
-    const models = await plugin.provider.models({} as any, ctx);
+    try {
+      const { CrofAIPlugin } = await import('../src/index.ts');
+      const plugin = await CrofAIPlugin(input);
 
-    expect(models['kimi-k2.5-lightning'].name).toBe('MoonshotAI: Kimi K2.5 (Lightning)');
-    expect(models['glm-5.1-precision'].name).toBe('Z.ai: GLM 5.1 (Precision)');
+      const ctx = { auth: { type: 'api' as const, key: 'test-api-key' } };
+      const models = await plugin.provider.models({} as any, ctx);
+
+      expect(models['kimi-k2.5-lightning'].name).toBe('MoonshotAI: Kimi K2.5 (Lightning)');
+      expect(models['glm-5.1-precision'].name).toBe('Z.ai: GLM 5.1 (Precision)');
+    } finally {
+      cleanup();
+    }
   });
 
   it('should expose reasoning variants for models that support reasoning', async () => {
@@ -255,17 +273,14 @@ describe('CrofAI Plugin', () => {
       json: async () => ({ data: mockModels }),
     });
 
-    const { CrofAIPlugin } = await import('../src/index.ts');
-    const plugin = await CrofAIPlugin({
-      project: { name: 'test-project' },
-      client: mockClient,
-      $: {} as any,
-      directory: '/test/project',
-      worktree: '/test/worktree',
-    });
+    const { input, cleanup } = createPluginInput();
 
-    const ctx = { auth: { type: 'api' as const, key: 'test-api-key' } };
-    const models = await plugin.provider.models({} as any, ctx);
+    try {
+      const { CrofAIPlugin } = await import('../src/index.ts');
+      const plugin = await CrofAIPlugin(input);
+
+      const ctx = { auth: { type: 'api' as const, key: 'test-api-key' } };
+      const models = await plugin.provider.models({} as any, ctx);
 
     // Reasoning-capable models have low/medium/high variants
     expect(models['kimi-k2.5'].variants).toBeDefined();
@@ -277,7 +292,10 @@ describe('CrofAI Plugin', () => {
     expect(models['kimi-k2.5-lightning'].variants.low).toEqual({ reasoning_effort: 'low' });
 
     // Non-reasoning model has no variants
-    expect(models['glm-5'].variants).toBeUndefined();
+      expect(models['glm-5'].variants).toBeUndefined();
+    } finally {
+      cleanup();
+    }
   });
 
   it('should handle fetch errors gracefully', async () => {
@@ -287,19 +305,172 @@ describe('CrofAI Plugin', () => {
       statusText: 'Unauthorized',
     });
 
-    const { CrofAIPlugin } = await import('../src/index.ts');
-    const plugin = await CrofAIPlugin({
-      project: { name: 'test-project' },
-      client: mockClient,
-      $: {} as any,
-      directory: '/test/project',
-      worktree: '/test/worktree',
+    const { input, cleanup } = createPluginInput();
+
+    try {
+      const { CrofAIPlugin } = await import('../src/index.ts');
+      const plugin = await CrofAIPlugin(input);
+
+      const ctx = { auth: { type: 'api' as const, key: 'test-api-key' } };
+      await expect(plugin.provider.models({} as any, ctx)).rejects.toThrow(
+        'Failed to fetch CrofAI models: 401 Unauthorized'
+      );
+    } finally {
+      cleanup();
+    }
+  });
+
+  it('should use cached models immediately and refresh them in the background', async () => {
+    const { input, testDir, cleanup } = createPluginInput();
+    const cachePath = join(testDir, '.memory', 'crofai-models.json');
+
+    mkdirSync(join(testDir, '.memory'), { recursive: true });
+
+    writeFileSync(
+      cachePath,
+      JSON.stringify(
+        {
+          fetchedAt: new Date().toISOString(),
+          models: [
+            {
+              id: 'cached-model',
+              name: 'Cached Model',
+              context_length: 1024,
+              max_completion_tokens: 512,
+            },
+          ],
+        },
+        null,
+        2
+      ),
+      'utf8'
+    );
+
+    globalThis.fetch = vi.fn().mockResolvedValue({
+      ok: true,
+      json: async () => ({
+        data: [
+          {
+            id: 'updated-model',
+            name: 'Updated Model',
+            context_length: 2048,
+            max_completion_tokens: 1024,
+          },
+        ],
+      }),
     });
 
-    const ctx = { auth: { type: 'api' as const, key: 'test-api-key' } };
-    await expect(plugin.provider.models({} as any, ctx)).rejects.toThrow(
-      'Failed to fetch CrofAI models: 401 Unauthorized'
+    try {
+      const { CrofAIPlugin } = await import('../src/index.ts');
+      const plugin = await CrofAIPlugin(input);
+
+      const ctx = { auth: { type: 'api' as const, key: 'test-api-key' } };
+      const models = await plugin.provider.models({} as any, ctx);
+
+      expect(models['cached-model'].name).toBe('Cached Model');
+      expect(globalThis.fetch).toHaveBeenCalledTimes(1);
+
+      for (let attempt = 0; attempt < 10; attempt++) {
+        const cachedPayload = JSON.parse(readFileSync(cachePath, 'utf8')) as {
+          models: Array<{ id: string }>;
+        };
+
+        if (cachedPayload.models[0].id === 'updated-model') {
+          break;
+        }
+
+        await new Promise((resolve) => setTimeout(resolve, 0));
+      }
+
+      const cachedPayload = JSON.parse(readFileSync(cachePath, 'utf8')) as {
+        models: Array<{ id: string }>;
+      };
+
+      expect(cachedPayload.models[0].id).toBe('updated-model');
+    } finally {
+      cleanup();
+    }
+  });
+
+  it('should write fetched models to cache', async () => {
+    const mockModels = [
+      {
+        id: 'kimi-k2.5',
+        name: 'MoonshotAI: Kimi K2.5',
+        context_length: 262144,
+        max_completion_tokens: 262144,
+      },
+    ];
+
+    globalThis.fetch = vi.fn().mockResolvedValue({
+      ok: true,
+      json: async () => ({ data: mockModels }),
+    });
+
+    const { input, testDir, cleanup } = createPluginInput();
+    const cachePath = join(testDir, '.memory', 'crofai-models.json');
+
+    try {
+      const { CrofAIPlugin } = await import('../src/index.ts');
+      const plugin = await CrofAIPlugin(input);
+
+      const ctx = { auth: { type: 'api' as const, key: 'test-api-key' } };
+      await plugin.provider.models({} as any, ctx);
+
+      expect(existsSync(cachePath)).toBe(true);
+
+      const cachedPayload = JSON.parse(readFileSync(cachePath, 'utf8')) as {
+        fetchedAt: string;
+        models: Array<{ id: string }>;
+      };
+
+      expect(cachedPayload.fetchedAt).toBeTruthy();
+      expect(cachedPayload.models[0].id).toBe('kimi-k2.5');
+    } finally {
+      cleanup();
+    }
+  });
+
+  it('should fall back to stale cached models when fetch fails', async () => {
+    const { input, testDir, cleanup } = createPluginInput();
+    const cachePath = join(testDir, '.memory', 'crofai-models.json');
+
+    mkdirSync(join(testDir, '.memory'), { recursive: true });
+
+    writeFileSync(
+      cachePath,
+      JSON.stringify(
+        {
+          fetchedAt: '2000-01-01T00:00:00.000Z',
+          models: [
+            {
+              id: 'stale-model',
+              name: 'Stale Model',
+              context_length: 2048,
+              max_completion_tokens: 1024,
+            },
+          ],
+        },
+        null,
+        2
+      ),
+      'utf8'
     );
+
+    globalThis.fetch = vi.fn().mockRejectedValue(new Error('network down'));
+
+    try {
+      const { CrofAIPlugin } = await import('../src/index.ts');
+      const plugin = await CrofAIPlugin(input);
+
+      const ctx = { auth: { type: 'api' as const, key: 'test-api-key' } };
+      const models = await plugin.provider.models({} as any, ctx);
+
+      expect(models['stale-model'].name).toBe('Stale Model');
+      expect(globalThis.fetch).toHaveBeenCalledTimes(1);
+    } finally {
+      cleanup();
+    }
   });
 
   it('should return models when auth key is provided via context', async () => {
@@ -318,75 +489,75 @@ describe('CrofAI Plugin', () => {
       }),
     });
 
-    const { CrofAIPlugin } = await import('../src/index.ts');
-    const plugin = await CrofAIPlugin({
-      project: { name: 'test-project' },
-      client: mockClient,
-      $: {} as any,
-      directory: '/test/project',
-      worktree: '/test/worktree',
-    });
+    const { input, cleanup } = createPluginInput();
 
-    const ctx = { auth: { type: 'api' as const, key: 'env-api-key' } };
-    const models = await plugin.provider.models({} as any, ctx);
+    try {
+      const { CrofAIPlugin } = await import('../src/index.ts');
+      const plugin = await CrofAIPlugin(input);
 
-    expect(models).toBeDefined();
-    expect(models['kimi-k2.5']).toBeDefined();
+      const ctx = { auth: { type: 'api' as const, key: 'env-api-key' } };
+      const models = await plugin.provider.models({} as any, ctx);
+
+      expect(models).toBeDefined();
+      expect(models['kimi-k2.5']).toBeDefined();
+    } finally {
+      cleanup();
+    }
   });
 
   it('should inject crofai provider into config', async () => {
-    const { CrofAIPlugin } = await import('../src/index.ts');
-    const plugin = await CrofAIPlugin({
-      project: { name: 'test-project' },
-      client: mockClient,
-      $: {} as any,
-      directory: '/test/project',
-      worktree: '/test/worktree',
-    });
+    const { input, cleanup } = createPluginInput();
 
-    const cfg: any = {};
-    await plugin.config?.(cfg);
+    try {
+      const { CrofAIPlugin } = await import('../src/index.ts');
+      const plugin = await CrofAIPlugin(input);
 
-    expect(cfg.provider?.crofai).toBeDefined();
-    expect(cfg.provider.crofai.options?.baseURL).toBe('https://crof.ai/v1');
-    expect(cfg.provider.crofai.npm).toBe('@ai-sdk/openai-compatible');
+      const cfg: any = {};
+      await plugin.config?.(cfg);
+
+      expect(cfg.provider?.crofai).toBeDefined();
+      expect(cfg.provider.crofai.options?.baseURL).toBe('https://crof.ai/v1');
+      expect(cfg.provider.crofai.npm).toBe('@ai-sdk/openai-compatible');
+    } finally {
+      cleanup();
+    }
   });
 
   it('should provide API key auth method in auth hook', async () => {
-    const { CrofAIPlugin } = await import('../src/index.ts');
-    const plugin = await CrofAIPlugin({
-      project: { name: 'test-project' },
-      client: mockClient,
-      $: {} as any,
-      directory: '/test/project',
-      worktree: '/test/worktree',
-    });
+    const { input, cleanup } = createPluginInput();
 
-    expect(plugin.auth).toBeDefined();
-    expect(plugin.auth?.provider).toBe('crofai');
-    expect(plugin.auth?.methods).toHaveLength(1);
-    expect(plugin.auth?.methods[0].type).toBe('api');
+    try {
+      const { CrofAIPlugin } = await import('../src/index.ts');
+      const plugin = await CrofAIPlugin(input);
+
+      expect(plugin.auth).toBeDefined();
+      expect(plugin.auth?.provider).toBe('crofai');
+      expect(plugin.auth?.methods).toHaveLength(1);
+      expect(plugin.auth?.methods[0].type).toBe('api');
+    } finally {
+      cleanup();
+    }
   });
 
   it('should inject Authorization header in auth loader', async () => {
     globalThis.fetch = vi.fn().mockResolvedValue({ ok: true, status: 200 });
 
-    const { CrofAIPlugin } = await import('../src/index.ts');
-    const plugin = await CrofAIPlugin({
-      project: { name: 'test-project' },
-      client: mockClient,
-      $: {} as any,
-      directory: '/test/project',
-      worktree: '/test/worktree',
-    });
+    const { input, cleanup } = createPluginInput();
 
-    const result = await plugin.auth!.loader!(mockGetAuth, {} as any);
+    try {
+      const { CrofAIPlugin } = await import('../src/index.ts');
+      const plugin = await CrofAIPlugin(input);
 
-    expect(result.apiKey).toBe('test-api-key');
+      const result = await plugin.auth!.loader!(mockGetAuth, {} as any);
 
-    // Make a request through the fetch wrapper
-    await result.fetch('https://example.com', {});
-    const calledHeaders = new Headers((globalThis.fetch as any).mock.calls[0][1].headers);
-    expect(calledHeaders.get('Authorization')).toBe('Bearer test-api-key');
+      expect(result.apiKey).toBe('test-api-key');
+
+      // Make a request through the fetch wrapper
+      await result.fetch('https://example.com', {});
+      const calledHeaders = new Headers((globalThis.fetch as any).mock.calls[0][1].headers);
+      expect(calledHeaders.get('Authorization')).toBe('Bearer test-api-key');
+    } finally {
+      cleanup();
+    }
   });
 });

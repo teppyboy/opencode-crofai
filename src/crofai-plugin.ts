@@ -1,4 +1,6 @@
 import type { Plugin } from '@opencode-ai/plugin';
+import { existsSync, mkdirSync, readFileSync, writeFileSync } from 'fs';
+import { dirname, join } from 'path';
 import { log, initLogger } from './logger.js';
 
 // Global API declarations for Bun runtime
@@ -11,6 +13,9 @@ export const CrofAIPlugin: Plugin = async (input: any) => {
   await initLogger(input.client);
 
   log('[CrofAI Plugin] Plugin initializing...');
+
+  const cacheFile = join(input.worktree ?? input.directory ?? process.cwd(), '.memory', 'crofai-models.json');
+  let modelRefreshPromise: Promise<void> | null = null;
 
   return {
     config: async (config: any) => {
@@ -36,6 +41,55 @@ export const CrofAIPlugin: Plugin = async (input: any) => {
         if (!apiKey) {
           log('[CrofAI Plugin] No auth found, skipping model registration');
         }
+
+        const readModelCache = (): CrofAIModel[] | null => {
+          if (!existsSync(cacheFile)) {
+            return null;
+          }
+
+          try {
+            const rawCache = readFileSync(cacheFile, 'utf8');
+            const parsedCache = JSON.parse(rawCache) as {
+              fetchedAt?: string;
+              models?: CrofAIModel[];
+            };
+
+            if (!parsedCache.fetchedAt || !Array.isArray(parsedCache.models)) {
+              return null;
+            }
+
+            const fetchedAt = Date.parse(parsedCache.fetchedAt);
+            if (Number.isNaN(fetchedAt)) {
+              return null;
+            }
+
+            return parsedCache.models;
+          } catch (error) {
+            log(
+              `[CrofAI Plugin] Failed to read model cache: ${
+                error instanceof Error ? error.toString() : String(error)
+              }`
+            );
+            return null;
+          }
+        };
+
+        const writeModelCache = (models: CrofAIModel[]) => {
+          try {
+            mkdirSync(dirname(cacheFile), { recursive: true });
+            writeFileSync(
+              cacheFile,
+              JSON.stringify({ fetchedAt: new Date().toISOString(), models }, null, 2),
+              'utf8'
+            );
+          } catch (error) {
+            log(
+              `[CrofAI Plugin] Failed to write model cache: ${
+                error instanceof Error ? error.toString() : String(error)
+              }`
+            );
+          }
+        };
 
         // Fetch CrofAI models
         const fetchModels = async () => {
@@ -77,7 +131,42 @@ export const CrofAIPlugin: Plugin = async (input: any) => {
           }
         };
 
-        const models = await fetchModels();
+        const fetchAndCacheModels = async () => {
+          const fetchedModels = await fetchModels();
+          writeModelCache(fetchedModels);
+          return fetchedModels;
+        };
+
+        const refreshModelsInBackground = () => {
+          if (modelRefreshPromise) {
+            return;
+          }
+
+          modelRefreshPromise = fetchAndCacheModels()
+            .then((fetchedModels) => {
+              log(`[CrofAI Plugin] Refreshed cached model list (${fetchedModels.length} models)`);
+            })
+            .catch((error) => {
+              log(
+                `[CrofAI Plugin] Background model refresh failed: ${
+                  error instanceof Error ? error.toString() : String(error)
+                }`
+              );
+            })
+            .finally(() => {
+              modelRefreshPromise = null;
+            });
+        };
+
+        const cachedModels = readModelCache();
+        const models = cachedModels
+          ? (() => {
+              log(`[CrofAI Plugin] Using cached model list (${cachedModels.length} models)`);
+              refreshModelsInBackground();
+              return cachedModels;
+            })()
+          : await fetchAndCacheModels();
+
         log(`[CrofAI Plugin] Retrieved ${models.length} available CrofAI models`);
         const modelRegistry: Record<string, any> = {};
 
