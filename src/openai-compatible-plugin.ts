@@ -1,5 +1,6 @@
 import type { Plugin } from '@opencode-ai/plugin';
 import { existsSync, mkdirSync, readFileSync, writeFileSync } from 'fs';
+import { homedir } from 'os';
 import { dirname, join } from 'path';
 import { log, initLogger } from './logger.js';
 
@@ -49,12 +50,27 @@ interface OpenAICompatiblePluginConfig {
   defaultContextLimit?: number;
   defaultOutputLimit?: number;
   buildDisplayName?: (model: OpenAICompatibleModel) => string;
-  getVariants?: (model: OpenAICompatibleModel) => Record<string, Record<string, string>> | undefined;
+  getVariants?: (
+    model: OpenAICompatibleModel
+  ) => Record<string, Record<string, string>> | undefined;
 }
 
 interface ModelCachePayload {
   fetchedAt: string;
   models: OpenAICompatibleModel[];
+}
+
+function getOpenCodeCacheDirectory(): string {
+  const xdgCacheHome = process.env.XDG_CACHE_HOME;
+  if (xdgCacheHome) {
+    return join(xdgCacheHome, 'opencode');
+  }
+
+  if (process.platform === 'win32' && process.env.LOCALAPPDATA) {
+    return join(process.env.LOCALAPPDATA, 'opencode');
+  }
+
+  return join(homedir(), '.cache', 'opencode');
 }
 
 export function buildVariantDisplayName(model: OpenAICompatibleModel): string {
@@ -101,11 +117,7 @@ export function createOpenAICompatiblePlugin(config: OpenAICompatiblePluginConfi
     await initLogger(input.client);
     log(`${logPrefix} Plugin initializing...`);
 
-    const cacheFile = join(
-      input.worktree ?? input.directory ?? process.cwd(),
-      '.memory',
-      cacheFileName
-    );
+    const cacheFile = join(getOpenCodeCacheDirectory(), '.cache', cacheFileName);
     let modelRefreshPromise: Promise<void> | null = null;
 
     const readModelCache = (): OpenAICompatibleModel[] | null => {
@@ -243,7 +255,9 @@ export function createOpenAICompatiblePlugin(config: OpenAICompatiblePluginConfi
             input: model.pricing ? parseFloat(model.pricing.prompt) * 1000000 : 0,
             output: model.pricing ? parseFloat(model.pricing.completion) * 1000000 : 0,
             cache: {
-              read: model.pricing?.cache_prompt ? parseFloat(model.pricing.cache_prompt) * 1000000 : 0,
+              read: model.pricing?.cache_prompt
+                ? parseFloat(model.pricing.cache_prompt) * 1000000
+                : 0,
               write: 0,
             },
           },
@@ -325,7 +339,9 @@ export function createOpenAICompatiblePlugin(config: OpenAICompatiblePluginConfi
 
           log(`${logPrefix} Retrieved ${models.length} available ${config.providerName} models`);
           const modelRegistry = buildModelRegistry(models);
-          log(`${logPrefix} Model registry created with ${Object.keys(modelRegistry).length} models`);
+          log(
+            `${logPrefix} Model registry created with ${Object.keys(modelRegistry).length} models`
+          );
           return modelRegistry;
         },
       },
@@ -335,8 +351,12 @@ export function createOpenAICompatiblePlugin(config: OpenAICompatiblePluginConfi
         log(
           `${logPrefix} chat.params input: model=${chatInput.model?.id}, providerID=${chatInput.model?.providerID}`
         );
-        log(`${logPrefix} chat.params message variant: ${JSON.stringify(chatInput.message?.variant)}`);
-        log(`${logPrefix} chat.params model variants: ${JSON.stringify(chatInput.model?.variants)}`);
+        log(
+          `${logPrefix} chat.params message variant: ${JSON.stringify(chatInput.message?.variant)}`
+        );
+        log(
+          `${logPrefix} chat.params model variants: ${JSON.stringify(chatInput.model?.variants)}`
+        );
         log(`${logPrefix} chat.params output.options (before): ${JSON.stringify(output.options)}`);
       },
 

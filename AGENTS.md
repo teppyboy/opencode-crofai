@@ -55,7 +55,7 @@
 
 ## Memory
 
-- Store temporary data in `.memory/` directory (gitignored)
+- Store temporary data in OpenCode cache under `.cache/`
 
 ## Project Context
 
@@ -98,7 +98,7 @@ For local development, point OpenCode at the built plugin:
 ### Current Behavior
 
 - Model list fetched from `GET /v1/models`
-- Model cache stored in `.memory/crofai-models.json`
+- Model cache stored in OpenCode cache under `.cache/crofai-models.json`
 - Cached models used immediately on startup when available
 - Cache refreshed in background on startup
 - Cached models continue to work if the endpoint is unavailable

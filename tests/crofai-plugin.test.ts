@@ -1,6 +1,6 @@
 import { describe, it, expect, vi, beforeEach } from 'vitest';
 import { existsSync, mkdirSync, mkdtempSync, readFileSync, rmSync, writeFileSync } from 'fs';
-import { join } from 'path';
+import { dirname, join } from 'path';
 import { tmpdir } from 'os';
 
 // Mock the logger before importing the plugin
@@ -15,6 +15,12 @@ describe('CrofAI Plugin', () => {
 
   const createPluginInput = () => {
     const testDir = mkdtempSync(join(tmpdir(), 'opencode-crofai-test-'));
+    const cacheHome = join(testDir, 'cache-home');
+    const cachePath = join(cacheHome, 'opencode', '.cache', 'crofai-models.json');
+    const previousXdgCacheHome = process.env.XDG_CACHE_HOME;
+
+    process.env.XDG_CACHE_HOME = cacheHome;
+
     return {
       input: {
         project: { name: 'test-project' },
@@ -24,7 +30,16 @@ describe('CrofAI Plugin', () => {
         worktree: testDir,
       },
       testDir,
-      cleanup: () => rmSync(testDir, { recursive: true, force: true }),
+      cachePath,
+      cleanup: () => {
+        if (previousXdgCacheHome === undefined) {
+          delete process.env.XDG_CACHE_HOME;
+        } else {
+          process.env.XDG_CACHE_HOME = previousXdgCacheHome;
+        }
+
+        rmSync(testDir, { recursive: true, force: true });
+      },
     };
   };
 
@@ -127,30 +142,30 @@ describe('CrofAI Plugin', () => {
       const ctx = { auth: { type: 'api' as const, key: 'test-api-key' } };
       const models = await plugin.provider.models(provider, ctx);
 
-    // Correct display names
-    expect(models['kimi-k2.5-lightning'].name).toBe('MoonshotAI: Kimi K2.5 Lightning');
-    expect(models['kimi-k2.5'].name).toBe('MoonshotAI: Kimi K2.5');
-    expect(models['glm-5'].name).toBe('Z.ai: GLM 5');
-    expect(models['glm-5.1'].name).toBe('Z.ai: GLM-5.1');
-    expect(models['glm-5.1-precision'].name).toBe('Z.ai: GLM-5.1 Precision');
+      // Correct display names
+      expect(models['kimi-k2.5-lightning'].name).toBe('MoonshotAI: Kimi K2.5 Lightning');
+      expect(models['kimi-k2.5'].name).toBe('MoonshotAI: Kimi K2.5');
+      expect(models['glm-5'].name).toBe('Z.ai: GLM 5');
+      expect(models['glm-5.1'].name).toBe('Z.ai: GLM-5.1');
+      expect(models['glm-5.1-precision'].name).toBe('Z.ai: GLM-5.1 Precision');
 
-    // Capabilities
-    expect(models['kimi-k2.5-lightning'].capabilities.reasoning).toBe(true);
-    expect(models['kimi-k2.5'].capabilities.reasoning).toBe(true);
-    expect(models['glm-5'].capabilities.reasoning).toBe(false);
+      // Capabilities
+      expect(models['kimi-k2.5-lightning'].capabilities.reasoning).toBe(true);
+      expect(models['kimi-k2.5'].capabilities.reasoning).toBe(true);
+      expect(models['glm-5'].capabilities.reasoning).toBe(false);
 
-    // API config
-    expect(models['kimi-k2.5'].api.id).toBe('kimi-k2.5');
-    expect(models['kimi-k2.5'].api.url).toBe('https://crof.ai/v1');
-    expect(models['kimi-k2.5'].api.npm).toBe('@ai-sdk/openai-compatible');
-    expect(models['kimi-k2.5'].providerID).toBe('crofai');
+      // API config
+      expect(models['kimi-k2.5'].api.id).toBe('kimi-k2.5');
+      expect(models['kimi-k2.5'].api.url).toBe('https://crof.ai/v1');
+      expect(models['kimi-k2.5'].api.npm).toBe('@ai-sdk/openai-compatible');
+      expect(models['kimi-k2.5'].providerID).toBe('crofai');
 
-    // Limits
-    expect(models['kimi-k2.5'].limit.context).toBe(262144);
-    expect(models['kimi-k2.5'].limit.output).toBe(262144);
+      // Limits
+      expect(models['kimi-k2.5'].limit.context).toBe(262144);
+      expect(models['kimi-k2.5'].limit.output).toBe(262144);
 
-    // Cost
-    expect(models['kimi-k2.5'].cost.input).toBe(0.35);
+      // Cost
+      expect(models['kimi-k2.5'].cost.input).toBe(0.35);
       expect(models['kimi-k2.5'].cost.output).toBeCloseTo(1.8, 10);
     } finally {
       cleanup();
@@ -282,16 +297,16 @@ describe('CrofAI Plugin', () => {
       const ctx = { auth: { type: 'api' as const, key: 'test-api-key' } };
       const models = await plugin.provider.models({} as any, ctx);
 
-    // Reasoning-capable models have low/medium/high variants
-    expect(models['kimi-k2.5'].variants).toBeDefined();
-    expect(models['kimi-k2.5'].variants.low).toEqual({ reasoning_effort: 'low' });
-    expect(models['kimi-k2.5'].variants.medium).toEqual({ reasoning_effort: 'medium' });
-    expect(models['kimi-k2.5'].variants.high).toEqual({ reasoning_effort: 'high' });
+      // Reasoning-capable models have low/medium/high variants
+      expect(models['kimi-k2.5'].variants).toBeDefined();
+      expect(models['kimi-k2.5'].variants.low).toEqual({ reasoning_effort: 'low' });
+      expect(models['kimi-k2.5'].variants.medium).toEqual({ reasoning_effort: 'medium' });
+      expect(models['kimi-k2.5'].variants.high).toEqual({ reasoning_effort: 'high' });
 
-    expect(models['kimi-k2.5-lightning'].variants).toBeDefined();
-    expect(models['kimi-k2.5-lightning'].variants.low).toEqual({ reasoning_effort: 'low' });
+      expect(models['kimi-k2.5-lightning'].variants).toBeDefined();
+      expect(models['kimi-k2.5-lightning'].variants.low).toEqual({ reasoning_effort: 'low' });
 
-    // Non-reasoning model has no variants
+      // Non-reasoning model has no variants
       expect(models['glm-5'].variants).toBeUndefined();
     } finally {
       cleanup();
@@ -321,10 +336,9 @@ describe('CrofAI Plugin', () => {
   });
 
   it('should use cached models immediately and refresh them in the background', async () => {
-    const { input, testDir, cleanup } = createPluginInput();
-    const cachePath = join(testDir, '.memory', 'crofai-models.json');
+    const { input, cachePath, cleanup } = createPluginInput();
 
-    mkdirSync(join(testDir, '.memory'), { recursive: true });
+    mkdirSync(dirname(cachePath), { recursive: true });
 
     writeFileSync(
       cachePath,
@@ -407,8 +421,7 @@ describe('CrofAI Plugin', () => {
       json: async () => ({ data: mockModels }),
     });
 
-    const { input, testDir, cleanup } = createPluginInput();
-    const cachePath = join(testDir, '.memory', 'crofai-models.json');
+    const { input, cachePath, cleanup } = createPluginInput();
 
     try {
       const { CrofAIPlugin } = await import('../src/index.ts');
@@ -432,10 +445,9 @@ describe('CrofAI Plugin', () => {
   });
 
   it('should fall back to stale cached models when fetch fails', async () => {
-    const { input, testDir, cleanup } = createPluginInput();
-    const cachePath = join(testDir, '.memory', 'crofai-models.json');
+    const { input, cachePath, cleanup } = createPluginInput();
 
-    mkdirSync(join(testDir, '.memory'), { recursive: true });
+    mkdirSync(dirname(cachePath), { recursive: true });
 
     writeFileSync(
       cachePath,

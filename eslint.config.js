@@ -24,6 +24,8 @@ export default tseslint.config(
         Buffer: 'readonly',
         // Bun globals
         Bun: 'readonly',
+        Headers: 'readonly',
+        setTimeout: 'readonly',
       },
     },
     plugins: {
@@ -37,6 +39,8 @@ export default tseslint.config(
       'prettier/prettier': 'error',
       '@typescript-eslint/explicit-function-return-type': 'off',
       '@typescript-eslint/no-explicit-any': 'warn',
+      'no-unused-vars': 'off',
+      '@typescript-eslint/no-unused-vars': ['error', { argsIgnorePattern: '^_' }],
       'no-console': 'error',
     },
   }

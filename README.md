@@ -5,7 +5,7 @@ OpenCode plugin for CrofAI's OpenAI-compatible API.
 ## What it does
 
 - registers CrofAI models from `GET /v1/models`
-- caches model metadata in `.memory/crofai-models.json`
+- caches model metadata in the OpenCode cache under `.cache/crofai-models.json`
 - uses cached models immediately on startup
 - refreshes the cache in background
 - falls back to cached models if the endpoint is unavailable
