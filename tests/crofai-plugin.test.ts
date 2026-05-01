@@ -69,8 +69,8 @@ describe('CrofAI Plugin', () => {
         context_length: 262144,
         max_completion_tokens: 262144,
         pricing: {
-          prompt: '0.00000035',
-          completion: '0.00000180',
+          prompt: '0.35',
+          completion: '1.80',
         },
       },
       {
@@ -82,8 +82,8 @@ describe('CrofAI Plugin', () => {
         context_length: 131072,
         max_completion_tokens: 32768,
         pricing: {
-          prompt: '0.0000025',
-          completion: '0.000004',
+          prompt: '2.5',
+          completion: '4',
         },
       },
       {
@@ -95,8 +95,8 @@ describe('CrofAI Plugin', () => {
         context_length: 202752,
         max_completion_tokens: 202752,
         pricing: {
-          prompt: '0.00000048',
-          completion: '0.00000190',
+          prompt: '0.48',
+          completion: '1.90',
         },
       },
       {
@@ -108,8 +108,8 @@ describe('CrofAI Plugin', () => {
         context_length: 202752,
         max_completion_tokens: 202752,
         pricing: {
-          prompt: '0.00000048',
-          completion: '0.00000190',
+          prompt: '0.48',
+          completion: '1.90',
         },
       },
       {
@@ -121,8 +121,8 @@ describe('CrofAI Plugin', () => {
         context_length: 202752,
         max_completion_tokens: 202752,
         pricing: {
-          prompt: '0.00000096',
-          completion: '0.00000380',
+          prompt: '0.96',
+          completion: '3.80',
         },
       },
     ];
@@ -530,9 +530,9 @@ describe('CrofAI Plugin', () => {
             context_length: 262144,
             max_completion_tokens: 262144,
             pricing: {
-              prompt: '0.00000035',
-              completion: '0.00000180',
-              cache_prompt: '0.000000035',
+              prompt: '0.35',
+              completion: '1.80',
+              cache_prompt: '0.035',
             },
           },
         ],

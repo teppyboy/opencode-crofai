@@ -283,12 +283,10 @@ export function createOpenAICompatiblePlugin(config: OpenAICompatiblePluginConfi
             interleaved: false,
           },
           cost: {
-            input: model.pricing ? parseFloat(model.pricing.prompt) * 1000000 : 0,
-            output: model.pricing ? parseFloat(model.pricing.completion) * 1000000 : 0,
+            input: model.pricing ? parseFloat(model.pricing.prompt) : 0,
+            output: model.pricing ? parseFloat(model.pricing.completion) : 0,
             cache: {
-              read: model.pricing?.cache_prompt
-                ? parseFloat(model.pricing.cache_prompt) * 1000000
-                : 0,
+              read: model.pricing?.cache_prompt ? parseFloat(model.pricing.cache_prompt) : 0,
               write: 0,
             },
           },
@@ -324,10 +322,10 @@ export function createOpenAICompatiblePlugin(config: OpenAICompatiblePluginConfi
           temperature: true,
           tool_call: model.supports_tool_calls ?? true,
           cost: {
-            input: model.pricing ? parseFloat(model.pricing.prompt) * 1000000 : 0,
-            output: model.pricing ? parseFloat(model.pricing.completion) * 1000000 : 0,
+            input: model.pricing ? parseFloat(model.pricing.prompt) : 0,
+            output: model.pricing ? parseFloat(model.pricing.completion) : 0,
             ...(model.pricing?.cache_prompt
-              ? { cache_read: parseFloat(model.pricing.cache_prompt) * 1000000 }
+              ? { cache_read: parseFloat(model.pricing.cache_prompt) }
               : {}),
           },
           limit: {
