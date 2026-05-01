@@ -1,6 +1,6 @@
 {
   "name": "@tretrauit/opencode-crofai",
-  "version": "1.2.7",
+  "version": "1.2.9",
   "description": "Adds CrofAI provider support to OpenCode.",
   "author": {
     "name": "tretrauit",
@@ -10,16 +10,16 @@
   "main": "./dist/index.js",
   "exports": {
     ".": {
-      "types": "./dist/index.d.ts",
+      "types": "./src/index.ts",
       "import": "./dist/index.js"
     },
     "./server": {
-      "types": "./dist/index.d.ts",
+      "types": "./src/index.ts",
       "import": "./dist/index.js"
     },
-    "./plugin": {
-      "types": "./src/plugin.d.ts",
-      "import": "./plugin.js"
+    "./factory": {
+      "types": "./src/factory.ts",
+      "import": "./dist/factory.js"
     }
   },
   "repository": {
@@ -34,7 +34,7 @@
     "src"
   ],
   "scripts": {
-    "build": "bun build src/index.ts --outdir dist --target bun",
+    "build": "bun build src/index.ts src/factory.ts --outdir dist --target bun",
     "test": "bun test tests",
     "lint": "eslint src tests",
     "format": "prettier --write \"src/**/*.{ts,js}\" \"tests/**/*.{ts,js}\""
@@ -54,8 +54,5 @@
     "prettier": "^3.2.4",
     "typescript-eslint": "^8.47.0",
     "vitest": "^3.2.4"
-  },
-  "dependencies": {
-    "@tretrauit/opencode-crofai": "."
   }
 }

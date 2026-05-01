@@ -55,12 +55,13 @@ Use this in `opencode.json`:
 
 ## Forking
 
-Reusable factory lives in `src/openai-compatible-plugin.ts`.
+Reusable factory is published from `@tretrauit/opencode-crofai/factory` and lives in
+`src/openai-compatible-plugin.ts`.
 
 Create a thin wrapper like:
 
 ```ts
-import { createOpenAICompatiblePlugin } from './openai-compatible-plugin.js';
+import { createOpenAICompatiblePlugin } from '@tretrauit/opencode-crofai/factory';
 
 export const ExamplePlugin = createOpenAICompatiblePlugin({
   providerID: 'example',

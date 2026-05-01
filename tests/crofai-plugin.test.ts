@@ -518,6 +518,27 @@ describe('CrofAI Plugin', () => {
   });
 
   it('should inject crofai provider into config', async () => {
+    globalThis.fetch = vi.fn().mockResolvedValue({
+      ok: true,
+      json: async () => ({
+        data: [
+          {
+            id: 'kimi-k2.5',
+            name: 'MoonshotAI: Kimi K2.5',
+            custom_reasoning: true,
+            reasoning_effort: true,
+            context_length: 262144,
+            max_completion_tokens: 262144,
+            pricing: {
+              prompt: '0.00000035',
+              completion: '0.00000180',
+              cache_prompt: '0.000000035',
+            },
+          },
+        ],
+      }),
+    });
+
     const { input, cleanup } = createPluginInput();
 
     try {
@@ -530,6 +551,28 @@ describe('CrofAI Plugin', () => {
       expect(cfg.provider?.crofai).toBeDefined();
       expect(cfg.provider.crofai.options?.baseURL).toBe('https://crof.ai/v1');
       expect(cfg.provider.crofai.npm).toBe('@ai-sdk/openai-compatible');
+      expect(cfg.provider.crofai.models['kimi-k2.5']).toMatchObject({
+        id: 'kimi-k2.5',
+        name: 'MoonshotAI: Kimi K2.5',
+        reasoning: true,
+        limit: {
+          context: 262144,
+          output: 262144,
+        },
+        modalities: {
+          input: ['text'],
+          output: ['text'],
+        },
+        provider: {
+          npm: '@ai-sdk/openai-compatible',
+          api: 'https://crof.ai/v1',
+        },
+      });
+      expect(cfg.provider.crofai.models['kimi-k2.5'].variants).toEqual({
+        low: { reasoning_effort: 'low' },
+        medium: { reasoning_effort: 'medium' },
+        high: { reasoning_effort: 'high' },
+      });
     } finally {
       cleanup();
     }

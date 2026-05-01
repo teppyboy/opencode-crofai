@@ -55,6 +55,37 @@ interface OpenAICompatiblePluginConfig {
   ) => Record<string, Record<string, string>> | undefined;
 }
 
+type ConfigModelModality = 'text' | 'audio' | 'image' | 'video' | 'pdf';
+
+type ConfigProviderModel = {
+  id: string;
+  name: string;
+  family: string;
+  reasoning: boolean;
+  temperature: boolean;
+  tool_call: boolean;
+  cost: {
+    input: number;
+    output: number;
+    cache_read?: number;
+  };
+  limit: {
+    context: number;
+    output: number;
+  };
+  modalities: {
+    input: ConfigModelModality[];
+    output: ConfigModelModality[];
+  };
+  provider: {
+    npm: string;
+    api: string;
+  };
+  options: Record<string, unknown>;
+  headers: Record<string, string>;
+  variants?: Record<string, Record<string, string>>;
+};
+
 interface ModelCachePayload {
   fetchedAt: string;
   models: OpenAICompatibleModel[];
@@ -276,9 +307,60 @@ export function createOpenAICompatiblePlugin(config: OpenAICompatiblePluginConfi
       return modelRegistry;
     };
 
+    const buildConfigModelRegistry = (models: OpenAICompatibleModel[]) => {
+      const modelRegistry: Record<string, ConfigProviderModel> = {};
+
+      for (const model of models) {
+        const inputMods = (model.modalities?.input ?? ['text']) as ConfigModelModality[];
+        const outputMods = (model.modalities?.output ?? ['text']) as ConfigModelModality[];
+        const supportsReasoning = Boolean(model.custom_reasoning || model.reasoning_effort);
+        const variants = getVariants(model);
+
+        modelRegistry[model.id] = {
+          id: model.id,
+          name: buildDisplayName(model),
+          family: model.family ?? defaultFamily,
+          reasoning: supportsReasoning,
+          temperature: true,
+          tool_call: model.supports_tool_calls ?? true,
+          cost: {
+            input: model.pricing ? parseFloat(model.pricing.prompt) * 1000000 : 0,
+            output: model.pricing ? parseFloat(model.pricing.completion) * 1000000 : 0,
+            ...(model.pricing?.cache_prompt
+              ? { cache_read: parseFloat(model.pricing.cache_prompt) * 1000000 }
+              : {}),
+          },
+          limit: {
+            context: model.context_length || defaultContextLimit,
+            output: model.max_completion_tokens || defaultOutputLimit,
+          },
+          modalities: {
+            input: inputMods,
+            output: outputMods,
+          },
+          provider: {
+            npm: providerNpm,
+            api: config.baseURL,
+          },
+          options: {},
+          headers: {},
+          ...(variants ? { variants } : {}),
+        };
+      }
+
+      return modelRegistry;
+    };
+
     return {
       config: async (outputConfig: any) => {
         log(`${logPrefix} Config hook called - registering provider`);
+        const cachedModels = readModelCache();
+        const models = cachedModels ?? (await fetchModels(''));
+
+        if (!cachedModels) {
+          writeModelCache(models);
+        }
+
         outputConfig.provider = outputConfig.provider || {};
         outputConfig.provider[config.providerID] = {
           npm: providerNpm,
@@ -286,9 +368,9 @@ export function createOpenAICompatiblePlugin(config: OpenAICompatiblePluginConfi
           options: {
             baseURL: config.baseURL,
           },
-          models: {},
+          models: buildConfigModelRegistry(models),
         };
-        log(`${logPrefix} Provider registered in config`);
+        log(`${logPrefix} Provider registered in config with ${models.length} models`);
       },
 
       provider: {

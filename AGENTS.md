@@ -2,8 +2,8 @@
 
 ## Build & Test Commands
 
-- **Build**: `bun run build` or `bun build ./src/index.ts --outdir dist --target bun`
-- **Test**: `bun test` or `bun test`
+- **Build**: `bun run build` or `bun build src/index.ts src/factory.ts --outdir dist --target bun`
+- **Test**: `bun test` or `bun test tests`
 - **Single Test**: `bun test tests/crofai-plugin.test.ts` (use file glob pattern)
 - **Watch Mode**: `bun test --watch`
 - **Lint**: `bun run lint` (eslint)
@@ -99,8 +99,9 @@ For local development, point OpenCode at the built plugin:
 
 - Model list fetched from `GET /v1/models`
 - Model cache stored in OpenCode cache under `.cache/crofai-models.json`
+- Provider config hook injects cached or freshly fetched models so custom providers are visible in OpenCode `1.14.31+`
 - Cached models used immediately on startup when available
-- Cache refreshed in background on startup
+- Cache refreshed in background when the provider model hook runs
 - Cached models continue to work if the endpoint is unavailable
 - Reasoning-capable models expose `low`, `medium`, and `high` variants
 
@@ -112,9 +113,17 @@ Models with variant suffixes like `-lightning`, `-precision`, and `-flash` have 
 
 - `src/crofai-plugin.ts` - CrofAI-specific wrapper config
 - `src/openai-compatible-plugin.ts` - reusable OpenAI-compatible provider factory
+- `src/index.ts` - package root entrypoint; export only real plugin functions for OpenCode loader compatibility
+- `src/factory.ts` - public factory subpath entrypoint for reusable helper exports
 - `src/logger.ts` - optional debug logger
 
-Factory exports available from `src/index.ts`:
+Package exports:
+
+- `@tretrauit/opencode-crofai` - root plugin entrypoint, exports `CrofAIPlugin` and default only
+- `@tretrauit/opencode-crofai/server` - OpenCode server entrypoint, same dist file as root
+- `@tretrauit/opencode-crofai/factory` - reusable factory/helper entrypoint
+
+Factory exports available from `@tretrauit/opencode-crofai/factory`:
 
 - `createOpenAICompatiblePlugin`
 - `buildVariantDisplayName`
@@ -122,6 +131,12 @@ Factory exports available from `src/index.ts`:
 - `OpenAICompatibleModel` type
 
 Forking another provider should usually mean creating a thin wrapper similar to `src/crofai-plugin.ts` with a different `providerID`, `providerName`, `baseURL`, auth prompt, and cache file name.
+
+Do not re-export factory helpers from `src/index.ts`; OpenCode legacy plugin loading enumerates root function exports and may treat helpers as plugins.
+
+### OpenCode Compatibility Note
+
+OpenCode `1.14.31` loads plugin auth hooks but runs plugin `provider.models()` before config-defined custom providers are added to its provider database. Because CrofAI is not in OpenCode's built-in models database, the plugin must populate `outputConfig.provider.crofai.models` directly in the config hook. Keep package-entry tests and config-model tests when changing exports or provider registration.
 
 ### Development
 
